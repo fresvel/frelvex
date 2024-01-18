@@ -1,4 +1,4 @@
-const gateway = `wss://172.24.122.38/ws`;
+const gateway = `wss://${window.location.host}/ws`;
 let websocket;
 
 window.addEventListener('load', onLoad);

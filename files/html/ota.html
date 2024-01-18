@@ -15,20 +15,10 @@
           <div class="columns is-centered">
             <div class="column is-4-tablet is-3-desktop is-2-widescreen">
               <br>
-              <br>
               <img src="logo.svg" width="150" height="255">
             </div>
             <div class="column is-5-tablet is-4-desktop is-3-widescreen"> 
               <form class="box" enctype="multipart/form-data" method="post" action="/ota_post">
-               <!-- <div class="field">
-                  <label class="label">Usuario</label>
-                  <div class="control has-icons-left">
-                    <input class="input" type="text" placeholder="Usuario" name="username" required>
-                    <span class="icon is-small is-left">
-                      <i class="fas fa-envelope"></i>
-                    </span>
-                  </div>
-                </div>-->
                 <div class="file has-name is-fullwidth">
                     <label class="file-label">
                       <input class="file-input" type="file" name="resume" id="archivoInput" onchange="actualizarNombreArchivo()">
@@ -46,17 +36,18 @@
                     </label>
                 </div>
                 <div class="field">
-                  <label class="checkbox">
-                    <input type="checkbox">
-                    Remember me
-                  </label>
+                  <label class="label"><br></label>
+                  <div class="control has-icons-left">
+                    <progress class="progress is-success" value="0" max="100" id="prbar">0%</progress>
+                    <span class="icon is-small is-left" id="resultado">
+                    </span>
+                  </div>
                 </div>
                 <div class="field">
                   <button class="button is-primary is-fullwidth" type="button" onclick="enviarArchivo()">
-                    Login
+                    Upload
                   </button>
                 </div>
-                <div id="resultado"></div>
               </form>
             </div>
             <div class="column is-4-tablet is-3-desktop is-2-widescreen"></div>
@@ -99,5 +90,19 @@
             alert('Selecciona un archivo primero.');
         }
     }
+</script>
+<script src="wsclient.js"></script>
+<script>
+  function onMessage(event) {
+        let state;
+        //console.log("Mensaje recibido");
+
+        let prbar = document.getElementById("prbar");
+        prbar.value=event.data
+        prbar.innerHTML=`${event.data}%`
+        
+        console.log(`${event.data}\n`);
+    }
+
 </script>
 </html>

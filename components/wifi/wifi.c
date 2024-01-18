@@ -10,6 +10,8 @@
 #include <esp_log.h>
 #include <esp_wifi.h>
 
+#include <wsse.h>
+
 #include "lwip/netif.h"
 #include "lwip/err.h"
 #define STA_SSID "Asterisk"
@@ -65,7 +67,7 @@ void config_wifi(void)
     esp_event_handler_instance_t ev_ip;
     ESP_ERROR_CHECK( esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID,wifi_event_handler,NULL,&ev_wifi));
     ESP_ERROR_CHECK( esp_event_handler_instance_register(IP_EVENT,IP_EVENT_STA_GOT_IP,wifi_event_handler,NULL,&ev_ip));
-
+    config_wsse();//Configura el servicio de websockets
     wifi_init_config_t wifi_cfg=WIFI_INIT_CONFIG_DEFAULT();
     esp_wifi_init(&wifi_cfg);
 

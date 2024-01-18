@@ -5,7 +5,7 @@
 #include <uart.h>
 #include <wifi.h>
 #include <fsys.h>
-#include <wsse.h>
+
 #include <ota.h>
 
 void funcion_send(void*param, char*buffer){
@@ -28,7 +28,6 @@ config_wifi();
 config_fsys();
 read_file("/spiffs/html/panel.html", funcion_send,NULL);
 
-config_wsse();
 //funcion_ota();
 printf("\n*****Iniciando OTA*****\n");
 config_ota();

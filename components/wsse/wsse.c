@@ -25,6 +25,12 @@
 #error This example cannot be used unless HTTPD_WS_SUPPORT is enabled in esp-http-server component configuration
 #endif
 
+typedef struct{
+    void *resp;
+    char *data;
+}ws_send_t;
+
+
 struct async_resp_arg {
     httpd_handle_t hd;
     int fd;
@@ -32,6 +38,7 @@ struct async_resp_arg {
 
 static const char *TAG = "wss_echo_server";
 static const size_t max_clients = 4;
+
 
 
 static void httpd_send_file(void*param,char * buffer){
@@ -460,8 +467,10 @@ static const httpd_uri_t ota_post_uri={
 
 static void send_hello(void *arg)
 {
-    static const char * data = "Hello client";
-    struct async_resp_arg *resp_arg = arg;
+    ws_send_t *ws_send_ms=(ws_send_t *)arg;
+
+    struct async_resp_arg *resp_arg = ws_send_ms->resp;
+    char * data=ws_send_ms->data;
     httpd_handle_t hd = resp_arg->hd;
     int fd = resp_arg->fd;
     httpd_ws_frame_t ws_pkt;
@@ -595,16 +604,18 @@ static void connect_handler(void* arg, esp_event_base_t event_base,
 // Get all clients and send async message
 static void wss_server_send_messages(void* param)
 {
+    ESP_LOGI(TAG, "Init task ws send messages");
     httpd_handle_t *server = (httpd_handle_t*) param;
     bool send_messages = true;
-
+    ws_send_t *ws_send_ms= malloc(sizeof(ws_send_t));;
     // Send async message to all connected clients that use websocket protocol every 10 seconds
     while (send_messages) {
-        vTaskDelay(10000 / portTICK_PERIOD_MS);
-
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
+        ESP_LOGI(TAG, "Trying to send a message");
         if (!*server) { // httpd might not have been created by now
             continue;
         }
+        ESP_LOGI(TAG, "Server ready! Trying to send a message");
         size_t clients = max_clients;
         int    client_fds[max_clients];
         if (httpd_get_client_list(*server, &clients, client_fds) == ESP_OK) {
@@ -615,7 +626,9 @@ static void wss_server_send_messages(void* param)
                     struct async_resp_arg *resp_arg = malloc(sizeof(struct async_resp_arg));
                     resp_arg->hd = *server;
                     resp_arg->fd = sock;
-                    if (httpd_queue_work(resp_arg->hd, send_hello, resp_arg) != ESP_OK) {
+                    ws_send_ms->data=strdup("50.3");
+                    ws_send_ms->resp=resp_arg;
+                    if (httpd_queue_work(resp_arg->hd, send_hello, ws_send_ms) != ESP_OK) {
                         ESP_LOGE(TAG, "httpd_queue_work failed!");
                         send_messages = false;
                         break;
@@ -637,7 +650,6 @@ void config_wsse(void)
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &connect_handler, &server));
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &disconnect_handler, &server));
     printf("\nInit websocket configuration\n");
-    //wss_server_send_messages(&server);
     xTaskCreate(wss_server_send_messages,"send messages",8192,&server,10,NULL);
     printf("\nWebsocket configuration was finished successfully\n");
 }
