@@ -39,8 +39,12 @@
                   <label class="label"><br></label>
                   <div class="control has-icons-left">
                     <progress class="progress is-success" value="0" max="100" id="prbar">0%</progress>
-                    <span class="icon is-small is-left" id="resultado">
-                    </span>
+                    
+                      <div class="notification is-light" id="resultado" hidden="true">
+                        Filed Loaded
+                      </div>
+                      <span></span>
+                    
                   </div>
                 </div>
                 <div class="field">
@@ -87,7 +91,7 @@
             websocket.send(chunk)
             offset += chunk_size
             if (offset < file.size){
-              setTimeout(sendChunk,10)
+              setTimeout(sendChunk,3)
               console.log("sending file chunk")
             }else{
               console.log("File send finished")
@@ -103,10 +107,13 @@
           }else if(state==2){
             console.log("Error en la carga del fichero")
           }else{
-             setTimeout(sendChunk,10)
+            console.log("Waiting for response...")
+            setTimeout(sendChunk,4)
           }
         }
         sendChunk();
+      }else{
+        alert("First select a file!");
       }
     }
 
@@ -116,13 +123,21 @@
     }
 
     function onMessage(event) {
-        
+      res_ota=document.getElementById('resultado')
       if (event.data=='77')
         state=1;
-      else if (event.data=='101') 
+      else if (event.data=='101'){
         state=2;
+        res_ota.innerText = "Upload filed!";
+        res_ota.classList.remove('is-success');
+        res_ota.classList.add('is-danger');
+        res_ota.removeAttribute('hidden');
+      } 
       else if (event.data=='100'){
-        document.getElementById('resultado').innerText = "Loaded!!";
+        res_ota.innerText = "File Loaded!";
+        res_ota.classList.remove('is-danger');
+        res_ota.classList.add('is-success');
+        res_ota.removeAttribute('hidden');
       }
         
         console.log(`${event.data}\n`);

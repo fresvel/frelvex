@@ -279,6 +279,8 @@ static esp_err_t ws_handler(httpd_req_t *req)
                 send_pkt.len = strlen(data);
                 send_pkt.type = HTTPD_WS_TYPE_TEXT;
                 ret = httpd_ws_send_frame(req, &send_pkt);//////***
+                vTaskDelay(1000/portTICK_PERIOD_MS);
+                
                 esp_restart();
             }
             
