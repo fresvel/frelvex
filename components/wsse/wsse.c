@@ -161,11 +161,15 @@ static esp_err_t ota_handler(httpd_req_t *req){
         httpd_resp_set_type(req, "text/html");
         read_file("/spiffs/html/ota.html",httpd_send_file,req);
         
-    }else if (req->method == HTTP_POST){
+    }
+    return ESP_OK;      
+}
 
-        esp_err_t err;
-        /* update handle : set by esp_ota_begin(), must be freed via esp_ota_end() */
-        esp_ota_handle_t update_handle = 0 ;
+esp_ota_handle_t update_handle = 0 ;
+
+static void ota_ws_init(){
+
+        esp_err_t err;        
         const esp_partition_t *update_partition = NULL;
 
         ESP_LOGI(TAG, "Starting OTA web server task");
@@ -192,100 +196,10 @@ static esp_err_t ota_handler(httpd_req_t *req){
             //task_fatal_error();
         }
         ESP_LOGI(TAG, "esp_ota_begin succeeded");
+    }
 
-
-
-        // Buffer para almacenar los datos del cuerpo de la solicitud
-        char buffer[1024];
-        char buffercp[1024];
-        int received, total = 0,tosend=0;
-        
-        // Lee los datos del cuerpo de la solicitud en el búfer
-        while ((received = httpd_req_recv(req, buffer, sizeof(buffer))) > 0) {
-            
-            memcpy(buffercp, buffer,1024);
-            tosend = received;
-            //printf("Total: %s\n", buffercp);
-            if (total == 0)
-            {
-
-                char subdata[1024];
-
-                //int ss=getSubstring(buffer,subdata,150,1024);
-                //printf("Valor de ss: %s\n", subdata);
-                
-                //strcpy(buffercp, buffer);
-                char *line = strtok(buffer, "\n");
-                tosend=strlen(line);
-                printf("line 1: %s\n", line);
-                
-                line = strtok(NULL,"\n");
-                tosend+=strlen(line);
-                printf("line 2: %s\n", line);
-                
-                line = strtok(NULL,"\n");
-                tosend+=strlen(line);
-                printf("line 3: %s\n", line);
-                
-                line = strtok(NULL,"\n");
-                tosend+=strlen(line);
-                printf("line 4: %s\n", line);
-
-
-              
-                int ss=getSubstring(buffercp,subdata,tosend+4,1024);
-                
-
-                memcpy(buffer,subdata,1020-tosend);
-                tosend=1020-tosend;
-
-                printf("Complemento y size nuevo de:%d\n", 1020-tosend);
-                printf("Buffer: %s\n", buffer);
-                
-                
-            }else if (total>= req->content_len-1024)
-            {
-                ESP_LOGI(TAG, "Ultimo buffer\n");
-
-                const char *resultado = strstr(buffer, "-----------------------------");
-
-                uint32_t posicion=0;
-                
-                if (resultado != NULL) {
-                    posicion = (uint32_t)(resultado - buffer);
-                    printf("\n\n\n\nPatrón encontrado en la posición %"PRIu32" De un received de: %d\n", posicion, received);
-                } else {
-                    printf("\n\n\n\nPatrón no encontrado.\n");
-                }
-
-                //buffer[posicion]=0;
-                //memset(buffer,255,);
-                //printf("\033[0;33m");
-                printf("Buffer final:\n");
-                printf("%s\n", buffer);
-                //tosend=1024-posicion;
-                
-
-            }
-            
-            err = esp_ota_write( update_handle, (const void *)buffer,tosend);
-                if (err != ESP_OK) {
-                    esp_ota_abort(update_handle);
-                    ESP_LOGE(TAG,"OTA WRITE FAILED!!\n");
-                    //task_fatal_error();
-                }
-            //printf("%s", buffer); 
-
-
-
-            total+=received;
-            printf("Recieved %d of the \n", total);
-            
-            
-            
-        }
-
-        err = esp_ota_end(update_handle);
+static void ota_ws_finish(){
+        esp_err_t err = esp_ota_end(update_handle);
         if (err != ESP_OK) {
             if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
                 ESP_LOGE(TAG, "Image validation failed, image is corrupted");
@@ -297,24 +211,13 @@ static esp_err_t ota_handler(httpd_req_t *req){
 
         }
 
-        err = esp_ota_set_boot_partition(update_partition);
+        err = esp_ota_set_boot_partition(esp_ota_get_next_update_partition(NULL));
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "esp_ota_set_boot_partition failed (%s)!", esp_err_to_name(err));
             //task_fatal_error();
         }
-        httpd_resp_set_type(req, "text/html");
-        httpd_resp_send(req,"Archivo Subido",14);
-        ESP_LOGW(TAG,"Archivo recibido, tamaño: %d total:%d\n",req->content_len,total);
-
         ESP_LOGI(TAG, "Prepare to restart system!");
-        esp_restart();
         
-
-        
-
-        
-    }
-    return ESP_OK;      
 }
 
 static esp_err_t ws_handler(httpd_req_t *req)
@@ -351,6 +254,8 @@ static esp_err_t ws_handler(httpd_req_t *req)
             return ret;
         }
     }
+
+    ESP_LOGI(TAG, "Type of packet received: %d", ws_pkt.type);
     // If it was a PONG, update the keep-alive
     if (ws_pkt.type == HTTPD_WS_TYPE_PONG) {
         ESP_LOGD(TAG, "Received PONG message");
@@ -362,6 +267,22 @@ static esp_err_t ws_handler(httpd_req_t *req)
     } else if (ws_pkt.type == HTTPD_WS_TYPE_TEXT || ws_pkt.type == HTTPD_WS_TYPE_PING || ws_pkt.type == HTTPD_WS_TYPE_CLOSE) {
         if (ws_pkt.type == HTTPD_WS_TYPE_TEXT) {
             ESP_LOGI(TAG, "Received packet with message: %s", ws_pkt.payload);
+
+            if(ws_pkt.payload[0]=='a')
+            ota_ws_init();
+            if(ws_pkt.payload[0]=='b'){
+                ota_ws_finish();
+                char*data="100";
+                httpd_ws_frame_t send_pkt;
+                memset(&send_pkt, 0, sizeof(httpd_ws_frame_t));
+                send_pkt.payload = (uint8_t*)data;
+                send_pkt.len = strlen(data);
+                send_pkt.type = HTTPD_WS_TYPE_TEXT;
+                ret = httpd_ws_send_frame(req, &send_pkt);//////***
+                esp_restart();
+            }
+            
+
         } else if (ws_pkt.type == HTTPD_WS_TYPE_PING) {
             // Response PONG packet to peer
             ESP_LOGI(TAG, "Got a WS PING frame, Replying PONG");
@@ -371,7 +292,7 @@ static esp_err_t ws_handler(httpd_req_t *req)
             ws_pkt.len = 0;
             ws_pkt.payload = NULL;
         }
-        ret = httpd_ws_send_frame(req, &ws_pkt);
+        ret = httpd_ws_send_frame(req, &ws_pkt);//////***
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "httpd_ws_send_frame failed with %d", ret);
         }
@@ -379,7 +300,35 @@ static esp_err_t ws_handler(httpd_req_t *req)
                  httpd_req_to_sockfd(req), httpd_ws_get_fd_info(req->handle, httpd_req_to_sockfd(req)));
         free(buf);
         return ret;
+    }else if (ws_pkt.type == HTTPD_WS_TYPE_BINARY){
+
+
+        
+        char*data="77";
+        httpd_ws_frame_t send_pkt;
+        memset(&send_pkt, 0, sizeof(httpd_ws_frame_t));
+
+        esp_err_t err = esp_ota_write( update_handle, (const void *)ws_pkt.payload,ws_pkt.len);
+        if (err != ESP_OK) {
+            esp_ota_abort(update_handle);
+            ESP_LOGE(TAG,"OTA WRITE FAILED!!\n");
+            data="101";
+            //task_fatal_error();
+        }
+
+        send_pkt.payload = (uint8_t*)data;
+        send_pkt.len = strlen(data);
+        send_pkt.type = HTTPD_WS_TYPE_TEXT;
+
+
+        ret = httpd_ws_send_frame(req, &send_pkt);//////***
+        //printf("%s",ws_pkt.payload);
+        //printf("len: %d",ws_pkt.len);
+
+
+        
     }
+
     free(buf);
     return ESP_OK;
 }
@@ -650,6 +599,6 @@ void config_wsse(void)
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &connect_handler, &server));
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &disconnect_handler, &server));
     printf("\nInit websocket configuration\n");
-    xTaskCreate(wss_server_send_messages,"send messages",8192,&server,10,NULL);
+    //xTaskCreate(wss_server_send_messages,"send messages",8192,&server,10,NULL);
     printf("\nWebsocket configuration was finished successfully\n");
 }

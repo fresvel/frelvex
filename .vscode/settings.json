@@ -15,6 +15,12 @@
     "idf.pythonBinPath": "/home/fresvel/.espressif/python_env/idf5.1_py3.9_env/bin/python",
     "idf.toolsPath": "/home/fresvel/.espressif",
     "files.associations": {
-        "functional": "c"
+        "functional": "c",
+        "array": "c",
+        "compare": "c",
+        "ratio": "c",
+        "tuple": "c",
+        "type_traits": "c",
+        "utility": "c"
     }
 }

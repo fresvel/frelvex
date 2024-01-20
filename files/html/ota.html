@@ -44,7 +44,7 @@
                   </div>
                 </div>
                 <div class="field">
-                  <button class="button is-primary is-fullwidth" type="button" onclick="enviarArchivo()">
+                  <button class="button is-primary is-fullwidth" type="button" onclick="sendFile()">
                     Upload
                   </button>
                 </div>
@@ -56,7 +56,10 @@
       </div>
     </section>
   </body>
+  <script src="wsclient.js"></script>
   <script>
+
+    let state=1;  
     function actualizarNombreArchivo() {
         var input = document.getElementById('archivoInput');
         var nombreArchivoSpan = document.getElementById('nombreArchivo');
@@ -67,42 +70,64 @@
         }
     }
 
-    function enviarArchivo() {
-        var input = document.getElementById('archivoInput');
-        var archivo = input.files[0];
+    function sendFile(){
+      let input=document.getElementById("archivoInput");
+      let file=input.files[0];
+      let bar=document.getElementById("prbar")
 
-        if (archivo) {
-            console.log('Archivo seleccionado:', archivo);
-            var formData = new FormData();
-                formData.append('archivo', archivo,archivo.name);
+      
+      if (file){
+        const chunk_size = 1024;
+        let offset=0;
+        websocket.send('a');
 
-                var xhr = new XMLHttpRequest();
-                xhr.open('POST', '/ota_post', true);
+        function sendChunk(){
+          if(state==1){
+            const chunk=file.slice(offset,offset + chunk_size)
+            websocket.send(chunk)
+            offset += chunk_size
+            if (offset < file.size){
+              setTimeout(sendChunk,10)
+              console.log("sending file chunk")
+            }else{
+              console.log("File send finished")
+              websocket.send('b');
+            }
 
-                xhr.onreadystatechange = function () {
-                    if (xhr.readyState == 4 && xhr.status == 200) {
-                        document.getElementById('resultado').innerText = xhr.responseText;
-                    }
-                };
 
-                xhr.send(formData);
-        } else {
-            alert('Selecciona un archivo primero.');
+            let prog=Math.round(offset/file.size*100);
+            prog = Math.min(prog, 100);
+            bar.value=prog;
+            bar.innerHTML=`${prog}%`
+            state=0;
+          }else if(state==2){
+            console.log("Error en la carga del fichero")
+          }else{
+             setTimeout(sendChunk,10)
+          }
         }
+        sendChunk();
+      }
     }
-</script>
-<script src="wsclient.js"></script>
-<script>
-  function onMessage(event) {
-        let state;
-        //console.log("Mensaje recibido");
 
-        let prbar = document.getElementById("prbar");
-        prbar.value=event.data
-        prbar.innerHTML=`${event.data}%`
+    function ws_send_pkt(value){
+      console.log("Sending packet...");
+      websocket.send(value);
+    }
+
+    function onMessage(event) {
+        
+      if (event.data=='77')
+        state=1;
+      else if (event.data=='101') 
+        state=2;
+      else if (event.data=='100'){
+        document.getElementById('resultado').innerText = "Loaded!!";
+      }
         
         console.log(`${event.data}\n`);
     }
 
 </script>
+
 </html>
