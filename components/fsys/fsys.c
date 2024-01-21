@@ -16,7 +16,7 @@ void config_fsys(void){
 ESP_LOGI(TAG, "config_fsys\n");
 
 esp_vfs_spiffs_conf_t fs_cfg={
-    .base_path= "/spiffs",
+    .base_path= "/files",
     .partition_label=NULL,
     .max_files=10,
     .format_if_mount_failed=true
@@ -76,7 +76,7 @@ if(block_size<file_size){
     file_send(param, buffer);
 
 }
-    file_send(param, NULL);//Indica que finaliza el envío del file
+    //file_send(param, NULL);//Indica que finaliza el envío del file
     printf("\033[0;31m");
     printf("The file was printed successfully");
 

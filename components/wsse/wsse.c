@@ -18,6 +18,8 @@
 #include "lwip/sockets.h"
 #include <esp_https_server.h>
 #include "keep_alive.h"
+#include "ws_get.h"
+#include "ws_app.h"
 #include "sdkconfig.h"
 #include "fsys.h"
 
@@ -36,194 +38,15 @@ struct async_resp_arg {
     int fd;
 };
 
-static const char *TAG = "wss_echo_server";
+static const char *TAG = "wss_server";
 static const size_t max_clients = 4;
 
-
-
-static void httpd_send_file(void*param,char * buffer){
-    httpd_req_t *req =(httpd_req_t*)param;
-    httpd_resp_sendstr_chunk(req,buffer);
-    printf("Sending file...\n");
-}
-
-static esp_err_t panel_handler(httpd_req_t *req){
-    if (req->method == HTTP_GET)
-    {
-        ESP_LOGI(TAG, "New client connected");
-        
-        httpd_resp_set_type(req, "text/html");
-        read_file("/spiffs/html/panel.html",httpd_send_file,req);
-        //httpd_resp_send(req, buffer,HTTPD_RESP_USE_STRLEN);
-        
-    }
-    return ESP_OK;
-    
-}
-
-static esp_err_t bulma_handler(httpd_req_t *req){
-    if (req->method == HTTP_GET)
-    {
-        ESP_LOGI(TAG, "New client connected");
-        
-        httpd_resp_set_type(req, "text/css");
-        read_file("/spiffs/css/bulma.css",httpd_send_file,req);
-        //read_file("/spiffs/ccs/bulma.css",httpd_send_file,req);
-
-        //httpd_resp_send(req, buffer,HTTPD_RESP_USE_STRLEN);
-        
-    }
-    return ESP_OK;
-    
-}
-
-static esp_err_t wsclient_handler(httpd_req_t *req){
-    if (req->method == HTTP_GET)
-    {
-        ESP_LOGI(TAG, "New client connected");
-        
-        httpd_resp_set_type(req, "text/javascript");
-        read_file("/spiffs/js/wsclient.js",httpd_send_file,req);
-        //httpd_resp_send(req, buffer,HTTPD_RESP_USE_STRLEN);
-        
-    }
-    return ESP_OK;
-    
-}
-
-static esp_err_t paneljs_handler(httpd_req_t *req){
-    if (req->method == HTTP_GET)
-    {
-        ESP_LOGI(TAG, "New client connected");
-        
-        httpd_resp_set_type(req, "text/javascript");
-        read_file("/spiffs/js/panel.js",httpd_send_file,req);
-        //httpd_resp_send(req, buffer,HTTPD_RESP_USE_STRLEN);
-        
-    }
-    return ESP_OK;
-    
-}
-
-static esp_err_t chartjs_handler(httpd_req_t *req){
-    if (req->method == HTTP_GET){
-        ESP_LOGI(TAG, "New client connected");
-        httpd_resp_set_type(req, "text/javascript");
-        read_file("/spiffs/js/chart.js",httpd_send_file,req);
-        
-    }
-    return ESP_OK;      
-}
-
-static esp_err_t logo_handler(httpd_req_t *req){
-    if (req->method == HTTP_GET){
-        ESP_LOGI(TAG, "New client connected");
-        httpd_resp_set_type(req, "image/svg+xml");
-        read_file("/spiffs/img/logo.svg",httpd_send_file,req);
-        
-    }
-    return ESP_OK;      
-}
-
-
-int getSubstring(const char *entrada, char *subcadena, int posicionInicial, size_t size_input) {
-    if (entrada == NULL || subcadena == NULL || posicionInicial < 0) {
-        // Verificar si los argumentos son válidos
-        printf("Error1\n");
-        return -1; // Error: Argumentos inválidos
-    }
-
-    
-    if (posicionInicial >= size_input) {
-        // La posición inicial está más allá del final de la cadena
-        printf("Error2\n");
-        return 0; // Tamaño del substring es cero
-    }
-
-    // Calcular el tamaño del substring
-    size_t tamañoSubstring = size_input - posicionInicial;
-
-    // Copiar el substring a la memoria asignada
-    memcpy(subcadena, entrada + posicionInicial, tamañoSubstring);
-
-    // Agregar el carácter nulo al final del substring
-    subcadena[tamañoSubstring] = '\0';
-    printf("Ok\n");
-    //printf("Valor de substring: %s\n", subcadena);
-    // Devolver el tamaño del substring
-    return (int)tamañoSubstring;
-}
-
-
-static esp_err_t ota_handler(httpd_req_t *req){
-    if (req->method == HTTP_GET){
-        ESP_LOGI(TAG, "New client connected");
-        httpd_resp_set_type(req, "text/html");
-        read_file("/spiffs/html/ota.html",httpd_send_file,req);
-        
-    }
-    return ESP_OK;      
-}
-
-esp_ota_handle_t update_handle = 0 ;
-
-static void ota_ws_init(){
-
-        esp_err_t err;        
-        const esp_partition_t *update_partition = NULL;
-
-        ESP_LOGI(TAG, "Starting OTA web server task");
-
-        const esp_partition_t *configured = esp_ota_get_boot_partition();
-        const esp_partition_t *running = esp_ota_get_running_partition();
-
-        if (configured != running) {
-            ESP_LOGW(TAG, "Configured OTA boot partition at offset 0x%08"PRIx32", but running from offset 0x%08"PRIx32,
-                    configured->address, running->address);
-            ESP_LOGW(TAG, "(This can happen if either the OTA boot data or preferred boot image become corrupted somehow.)");
-        }
-        ESP_LOGI(TAG, "Running partition: %s", running->label);
-
-        update_partition = esp_ota_get_next_update_partition(NULL);
-        assert(update_partition != NULL);
-        ESP_LOGI(TAG, "Writing to partition: %s",update_partition->label);
-
-        
-        err = esp_ota_begin(update_partition, OTA_WITH_SEQUENTIAL_WRITES, &update_handle);
-        if (err != ESP_OK) {
-            ESP_LOGE(TAG, "esp_ota_begin failed (%s)", esp_err_to_name(err));
-            esp_ota_abort(update_handle);
-            //task_fatal_error();
-        }
-        ESP_LOGI(TAG, "esp_ota_begin succeeded");
-    }
-
-static void ota_ws_finish(){
-        esp_err_t err = esp_ota_end(update_handle);
-        if (err != ESP_OK) {
-            if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
-                ESP_LOGE(TAG, "Image validation failed, image is corrupted");
-            } else {
-                ESP_LOGE(TAG, "esp_ota_end failed (%s)!", esp_err_to_name(err));
-            }
-            //task_fatal_error();
-            ESP_LOGE(TAG,"OTA END FAILED!!\n");
-
-        }
-
-        err = esp_ota_set_boot_partition(esp_ota_get_next_update_partition(NULL));
-        if (err != ESP_OK) {
-            ESP_LOGE(TAG, "esp_ota_set_boot_partition failed (%s)!", esp_err_to_name(err));
-            //task_fatal_error();
-        }
-        ESP_LOGI(TAG, "Prepare to restart system!");
-        
-}
 
 static esp_err_t ws_handler(httpd_req_t *req)
 {
     if (req->method == HTTP_GET) {
         ESP_LOGI(TAG, "Handshake done, the new connection was opened");
+        //ws_app_send_resp(req);
         return ESP_OK;
     }
     httpd_ws_frame_t ws_pkt;
@@ -255,89 +78,44 @@ static esp_err_t ws_handler(httpd_req_t *req)
         }
     }
 
-    ESP_LOGI(TAG, "Type of packet received: %d", ws_pkt.type);
     // If it was a PONG, update the keep-alive
-    if (ws_pkt.type == HTTPD_WS_TYPE_PONG) {
-        ESP_LOGD(TAG, "Received PONG message");
-        free(buf);
-        return wss_keep_alive_client_is_active(httpd_get_global_user_ctx(req->handle),
-                httpd_req_to_sockfd(req));
-
-    // If it was a TEXT message, just echo it back
-    } else if (ws_pkt.type == HTTPD_WS_TYPE_TEXT || ws_pkt.type == HTTPD_WS_TYPE_PING || ws_pkt.type == HTTPD_WS_TYPE_CLOSE) {
-        if (ws_pkt.type == HTTPD_WS_TYPE_TEXT) {
-            ESP_LOGI(TAG, "Received packet with message: %s", ws_pkt.payload);
-
-            if(ws_pkt.payload[0]=='a')
-            ota_ws_init();
-            if(ws_pkt.payload[0]=='b'){
-                ota_ws_finish();
-                char*data="100";
-                httpd_ws_frame_t send_pkt;
-                memset(&send_pkt, 0, sizeof(httpd_ws_frame_t));
-                send_pkt.payload = (uint8_t*)data;
-                send_pkt.len = strlen(data);
-                send_pkt.type = HTTPD_WS_TYPE_TEXT;
-                ret = httpd_ws_send_frame(req, &send_pkt);//////***
-                vTaskDelay(1000/portTICK_PERIOD_MS);
-                
-                esp_restart();
-            }
-            
-
-        } else if (ws_pkt.type == HTTPD_WS_TYPE_PING) {
-            // Response PONG packet to peer
-            ESP_LOGI(TAG, "Got a WS PING frame, Replying PONG");
-            ws_pkt.type = HTTPD_WS_TYPE_PONG;
-        } else if (ws_pkt.type == HTTPD_WS_TYPE_CLOSE) {
-            // Response CLOSE packet with no payload to peer
-            ws_pkt.len = 0;
-            ws_pkt.payload = NULL;
-        }
-        ret = httpd_ws_send_frame(req, &ws_pkt);//////***
-        if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "httpd_ws_send_frame failed with %d", ret);
-        }
-        ESP_LOGI(TAG, "ws_handler: httpd_handle_t=%p, sockfd=%d, client_info:%d", req->handle,
-                 httpd_req_to_sockfd(req), httpd_ws_get_fd_info(req->handle, httpd_req_to_sockfd(req)));
+    switch (ws_pkt.type)
+    {
+    case HTTPD_WS_TYPE_PONG:
+        ret =ws_process_pong(req);
         free(buf);
         return ret;
-    }else if (ws_pkt.type == HTTPD_WS_TYPE_BINARY){
-
-
-        
-        char*data="77";
-        httpd_ws_frame_t send_pkt;
-        memset(&send_pkt, 0, sizeof(httpd_ws_frame_t));
-
-        esp_err_t err = esp_ota_write( update_handle, (const void *)ws_pkt.payload,ws_pkt.len);
-        if (err != ESP_OK) {
-            esp_ota_abort(update_handle);
-            ESP_LOGE(TAG,"OTA WRITE FAILED!!\n");
-            data="101";
-            //task_fatal_error();
-        }
-
-        send_pkt.payload = (uint8_t*)data;
-        send_pkt.len = strlen(data);
-        send_pkt.type = HTTPD_WS_TYPE_TEXT;
-
-
-        ret = httpd_ws_send_frame(req, &send_pkt);//////***
-        //printf("%s",ws_pkt.payload);
-        //printf("len: %d",ws_pkt.len);
-
-
-        
+    case HTTPD_WS_TYPE_TEXT:
+        ret=ws_process_text(&ws_pkt,req);
+        free(buf);
+        return ret;
+    case HTTPD_WS_TYPE_PING:
+        ret=ws_process_ping(&ws_pkt,req);
+        free(buf);
+        return ret;
+    case HTTPD_WS_TYPE_CLOSE:
+        ret=ws_process_close(&ws_pkt,req);
+        free(buf);
+        return ret;
+    case HTTPD_WS_TYPE_BINARY:
+        ret=ws_process_binary(&ws_pkt,req);
+        free(buf);
+        return ret;
+    break;
+    default:
+        ESP_LOGI(TAG, "Type of packet received: %d", ws_pkt.type);
+        free(buf);
+        return ESP_OK;
     }
 
-    free(buf);
-    return ESP_OK;
+
+    //free(buf);************ALERTA REVISAR BIEN LA LIBERACIÓN DE BUFF
+    
 }
 
 esp_err_t wss_open_fd(httpd_handle_t hd, int sockfd)
 {
-    ESP_LOGI(TAG, "New client connected %d", sockfd);
+    ESP_LOGI(TAG, "New client connected %d ***", sockfd);
     wss_keep_alive_t h = httpd_get_global_user_ctx(hd);
     return wss_keep_alive_add_client(h, sockfd);
 }
@@ -358,63 +136,10 @@ static const httpd_uri_t ws = {
         .is_websocket = true,
         .handle_ws_control_frames = true
 };
-/*
-static const httpd_uri_t get_panel={
-    .uri = "/panel",
-    .method = HTTP_GET,
-    .handler = panel_handler,
-    .user_ctx = NULL
-};
-*/
-static const httpd_uri_t panel_js_uri={
-    .uri = "/panel.js",
-    .method = HTTP_GET,
-    .handler = paneljs_handler,
-    .user_ctx = NULL
-};
-
-static const httpd_uri_t wsclient_js_uri={
-    .uri = "/wsclient.js",
-    .method = HTTP_GET,
-    .handler = wsclient_handler,
-    .user_ctx = NULL
-};
-
-static const httpd_uri_t chart_js_uri={
-    .uri = "/chart.js",
-    .method = HTTP_GET,
-    .handler = chartjs_handler,
-    .user_ctx = NULL
-};
-
-static const httpd_uri_t bulma_css_uri={
-    .uri = "/bulma.css",
-    .method = HTTP_GET,
-    .handler = bulma_handler,
-    .user_ctx = NULL
-};
-
-static const httpd_uri_t logo_img_uri={
-    .uri = "/logo.svg",
-    .method = HTTP_GET,
-    .handler = logo_handler,
-    .user_ctx = NULL
-};
 
 
-static const httpd_uri_t ota_uri={
-    .uri = "/ota.html",
-    .method = HTTP_GET,
-    .handler = ota_handler,
-    .user_ctx = NULL
-};
 
-static const httpd_uri_t ota_post_uri={
-    .uri = "/ota_post",
-    .method = HTTP_POST,
-    .handler = ota_handler,
-    .user_ctx = NULL
-};
+
 
 static void send_hello(void *arg)
 {
@@ -509,15 +234,16 @@ static httpd_handle_t start_wss_echo_server(void)
     // Set URI handlers
     ESP_LOGI(TAG, "Registering URI handlers");
     httpd_register_uri_handler(server, &ws);
-    //httpd_register_uri_handler(server,&get_panel);
-    httpd_register_uri_handler(server,&wsclient_js_uri);
-    httpd_register_uri_handler(server,&bulma_css_uri);
+    httpd_register_uri_handler(server,&ws_apphtml_uri);
+    httpd_register_uri_handler(server,&ws_appjs_uri);
+    httpd_register_uri_handler(server,&ws_bulmacss_uri);
+    httpd_register_uri_handler(server,&ws_logoimg_uri);
     httpd_register_uri_handler(server,&panel_js_uri);
     httpd_register_uri_handler(server,&chart_js_uri);
-    httpd_register_uri_handler(server,&logo_img_uri);
     httpd_register_uri_handler(server,&ota_uri);
     httpd_register_uri_handler(server,&ota_post_uri);
     wss_keep_alive_set_user_ctx(keep_alive, server);
+    httpd_register_uri_handler(server,&get_panel);
 
     return server;
 }
@@ -601,6 +327,7 @@ void config_wsse(void)
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &connect_handler, &server));
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &disconnect_handler, &server));
     printf("\nInit websocket configuration\n");
+    void ws_app();
     //xTaskCreate(wss_server_send_messages,"send messages",8192,&server,10,NULL);
     printf("\nWebsocket configuration was finished successfully\n");
 }

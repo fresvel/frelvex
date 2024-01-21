@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frelvex</title>
+    <link rel="stylesheet" href="bulma.css">
+    <style>
+      .row{
+      margin-top: -32px;
+      }
+      .netif{
+      margin-top: -18px;
+      }
+
+      .led-button {
+      width: 10px; /* Ajusta el tamaño del botón según tus preferencias */
+    }
+
+    .led-off {
+      background-color: #ccc; /* Color para el estado apagado */
+      border-color: #ccc;
+      color: #fff;
+    }
+
+    .led-red {
+      background-color: #ea0037; /* Color para el estado encendido en rojo */
+      border-color: #a00077;
+      color: #fff;
+    }
+
+    .led-green {
+      background-color: #00ca77; /* Color para el estado encendido en verde */
+      border-color: #00a077;
+      color: #fff;
+    }
+
+    .blink {
+      animation: blink 3s infinite; /* Animación de parpadeo */
+    }
+
+    @keyframes blink {
+      0%, 50%, 100% {
+        opacity: 1;
+      }
+      25%, 75% {
+        opacity: 0;
+      }
+    }
+  </style>
+  </head>
+  <body>
