@@ -22,6 +22,8 @@
         "tuple": "c",
         "type_traits": "c",
         "utility": "c",
-        "esp_https_server.h": "c"
+        "esp_https_server.h": "c",
+        "ota_main.h": "c",
+        "freertos.h": "c"
     }
 }

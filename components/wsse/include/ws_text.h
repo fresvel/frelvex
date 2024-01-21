@@ -1,0 +1,1 @@
+void ws_app_text(char *ws_app_str);

@@ -1,10 +1,6 @@
 //Se puede manipular como blob desde fylesystem
 
-ws_header={
-    "enabled":true,
-    "ws-led":true,
-    "ws-navbar":{"enabled":true,"path":""},
-}
+ws_header=["ws-navbar","ws-led"] // incluir los elementos que se necesitan
 
 /*
 The loaded content is the indicated in show variable, the path
@@ -14,7 +10,7 @@ name of these three elements are mirrored in each directory
 only changes their extensions. When websoket receives a request it 
 returns the three files if that exists.
 
-The websoket returns a json object containing the event data which 
+The websoket server and client communicates via json object containing the event data which 
 has the neext structure.
 
 ws_app={
@@ -28,7 +24,7 @@ In this object the type element could be:
 - ws-data.- To get information in a directly mode.
 - ws-header.- To change the content of the header
 - ws-footer.- To change the content of the footer
-- ws-event To manage functions like autentications and erros.
+- ws-system To manage functions like autentications, erros ota.
 
 1. ws-body
 In the ws-content type the data variable returns a json object 
@@ -47,16 +43,7 @@ At the end of this request the next data will be overwritten
 - The innerhtml of the ws-css
 */
 
-ws_body={ 
-    "show":"cnt-index",
-    "ws-cnts":{
-        "cnt-index":{"path":"","loaded":false},
-        "cnt-login":{"path":"","loaded":false},
-        "cnt-panel":{"path":"","loaded":false},
-        "cnt-ota":{"path":"","loaded":false},
-        "cnt-x":{"path":"","loaded":false},
-    },
-}
+ws_body="ws-ota"
 
 /*
 2. ws-section
@@ -116,37 +103,38 @@ functions= {
 */
 
 ws_functions={ 
-    "cnt-x":{"obj_functions":""}
+    "ws-body":["functions"]
 }
 
 //Validar ya que es posible que no se carguen los estilos
 ws_styles={
-    "cnt-x":{
-        "name1":"sty1",
-        "name2":"sty2",
-    }
+    "ws-body":["led-css"],
+
 }
 
 /*Verify if it is posible to get first the websocket connection
 and after of that get the ccs libraries and js files.  
 */
 // to manage the general libraries of css
-ws_lib_css={
-    "ws-bulma":{"enabled":true, "path":""},
-    "ws-led":true, // send to ws_styles
-}
+ws_lib_css=["ws-bulma"]
+    
 
 /*To manage the general libraries of javascript */
-ws_lib_js={ 
-    "ws-chartjs":{"enabled":true, "path":""},
-}
+ws_lib_js=["ws-chartjs"] 
+
 
 
 ws_app={
-	"ws-header":ws_header,
-	"ws-body":ws_body,
-    "ws-script":ws_lib_js,
-    "ws-css":ws_lib_css	
+  "type":"ws-system",
+	"data":{
+    "ws-method":"ws-onload",
+    "ws-request":{
+        "ws-header":ws_header,
+        "ws-body":ws_body,
+        "ws-lib-js":ws_lib_js,
+        "ws-lib-css":ws_lib_css
+    }
+  }	
 };
 
 const gateway = `wss://${window.location.host}/ws`;
@@ -162,8 +150,21 @@ function initWebSocket() {
     websocket.onerror = onError
 }
 
+let jsws={
+  "type": "websocket",
+  "data": {"id":"ws://${window.location.host"}
+}
+
 function onOpen(event) {
     let ws_js=document.getElementById('ws-js')
+    
+
+    const ws_app_json = JSON.stringify(ws_app)
+    websocket.send(`${ws_app_json}`)
+    //websocket.send(`{"type":"tipo de ws desde ll","data":"ggggdatos de proceso"}`)
+    //websocket.send(ws_app_json)
+    console.log("ws_app sended:", `${ws_app_json}`)
+    
     
     ws_js.innerHTML=`let state=1;  
     function actualizarNombreArchivo() {
@@ -224,7 +225,7 @@ function onOpen(event) {
       websocket.send(value);
     }
 
-    function newMessage(event) {
+    onMessage=function (event) {
       res_ota=document.getElementById('resultado')
       if (event.data=='77')
         state=1;
@@ -249,7 +250,7 @@ function onOpen(event) {
     //ws_led.classList.add('led-green');
     //blinkLED(ws_led);
     console.log('Connection opened');
-    websocket.onmessage=newMessage;
+    websocket.onmessage=onMessage;
     //let ws_function=document.getElementById('ws-function');
     //ws_function.innerHTML="function function_alert(){alert('Función creada')}";
     //function_alert();
@@ -315,3 +316,17 @@ function onLoad(event) {
 function sendWebsocket() {
     websocket.send('toggle mundo');
 }
+
+/*
+7. ws-system
+The data od ws-system has the next structure:
+
+data={
+  "method":"name",
+  request":request
+}
+
+Where name is a function on the websocket server and
+request let process the function to return the request data
+
+*/

@@ -3,8 +3,9 @@
 #include <esp_http_server.h>
 #include <esp_log.h>
 #include "esp_ota_ops.h"
-#include <fsys.h>
+#include <fsys_main.h>
 #include <keep_alive.h>
+#include <ws_text.h>
 
 static char *TAG="ws-app";
 
@@ -74,7 +75,13 @@ static void ws_ota_finish(){
 
 
 esp_err_t ws_process_text(httpd_ws_frame_t *ws_pkt,httpd_req_t *req){ 
-    ESP_LOGI(TAG, "Received packet with message: %s", ws_pkt->payload);
+    
+    
+
+    ws_app_text((char*)ws_pkt->payload);
+
+    ESP_LOGI(TAG, "Received text packet with message: %s", ws_pkt->payload);
+    
     esp_err_t ret;
     if(ws_pkt->payload[0]=='a')
     ws_ota_init();
@@ -87,11 +94,10 @@ esp_err_t ws_process_text(httpd_ws_frame_t *ws_pkt,httpd_req_t *req){
         send_pkt.len = strlen(data);
         send_pkt.type = HTTPD_WS_TYPE_TEXT;
         ret = httpd_ws_send_frame(req, &send_pkt);//////***
-        vTaskDelay(1000/portTICK_PERIOD_MS);
-        
+        vTaskDelay(1000/portTICK_PERIOD_MS);    
         esp_restart();
     }
-     ret = httpd_ws_send_frame(req, ws_pkt);//////***
+    ret = httpd_ws_send_frame(req, ws_pkt);//////***
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "httpd_ws_send_frame failed with %d", ret);
     }
@@ -99,6 +105,9 @@ esp_err_t ws_process_text(httpd_ws_frame_t *ws_pkt,httpd_req_t *req){
                 httpd_req_to_sockfd(req), httpd_ws_get_fd_info(req->handle, httpd_req_to_sockfd(req)));
     return ret;
     }
+
+
+
 
 esp_err_t ws_process_pong(httpd_req_t *req){ 
     ESP_LOGD(TAG, "Received PONG message");

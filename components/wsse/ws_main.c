@@ -21,7 +21,7 @@
 #include "ws_get.h"
 #include "ws_app.h"
 #include "sdkconfig.h"
-#include "fsys.h"
+#include "fsys_main.h"
 
 #if !CONFIG_HTTPD_WS_SUPPORT
 #error This example cannot be used unless HTTPD_WS_SUPPORT is enabled in esp-http-server component configuration

@@ -1,2 +1,2 @@
-idf_component_register(SRCS "mqtt.c"
+idf_component_register(SRCS "mqtt_main.c"
                     INCLUDE_DIRS "include")

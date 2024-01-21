@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include <gpio.h>
-#include <uart.h>
-#include <wifi.h>
-#include <fsys.h>
-
-#include <ota.h>
+#include <gpio_main.h>
+#include <uart_main.h>
+#include <wifi_main.h>
+#include <fsys_main.h>
+#include <ws_text.h>
+#include <ota_main.h>
 
 void funcion_send(void*param, char*buffer){
     if (buffer!=NULL)
@@ -20,6 +20,11 @@ void funcion_send(void*param, char*buffer){
 
 void app_main(void)
 {
+
+
+//char *json_str = "{\"type\":\"tipo de ws\",\"data\":\"datos de proceso\"}";
+//ws_app_types(json_str);
+
 
 config_gpio();
 config_uart();

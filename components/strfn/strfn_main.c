@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "strfn.h"
+#include "strfn_main.h"
 #include "string.h"
 
 int getSubstring(const char *entrada, char *subcadena, int posicionInicial, size_t size_input) {
