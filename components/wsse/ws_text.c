@@ -3,6 +3,8 @@
 #include <string.h>
 #include <ws_text.h>
 #include <esp_log.h>
+#include <esp_err.h>
+#include <esp_system.h>
 #include <cJSON.h>
 
 
@@ -10,10 +12,12 @@
 static const char *TAG="ws-text";
 typedef struct {
     char *type;
-    char *data;
+    char *info;
 } ws_appjson_t;
 
-void ws_getjson_app(const char *json_string, ws_appjson_t *ws_object) {
+// Recibe un json de {"tag":"", "data":{}}
+// Devuelve el type y un string de los datos
+static esp_err_t ws_getjson_tags(const char *json_string, ws_appjson_t *ws_object, const char *tag, const char *info) { 
     printf("Iniciando JSON\n");
 
     cJSON *root = cJSON_Parse(json_string);
@@ -21,13 +25,20 @@ void ws_getjson_app(const char *json_string, ws_appjson_t *ws_object) {
     if (root == NULL) {
         // Manejar el error de análisis JSON
         printf("Error parsing JSON\n");
-        return;
+        return ESP_FAIL;
     }
 
     printf("Datos obtenidos de json\n");
 
-    cJSON *type = cJSON_GetObjectItem(root, "type");
-    cJSON *data = cJSON_GetObjectItem(root, "data");
+    cJSON *type = cJSON_GetObjectItem(root, tag);
+    cJSON *data = cJSON_GetObjectItem(root, info);
+    
+    if (type == NULL||data == NULL) 
+    {
+        ESP_LOGE(TAG, "Etiquetas no encontradas");
+        return ESP_FAIL;
+    }
+    
     char* data_str=cJSON_PrintUnformatted(data);
 
     printf("Datos obtenidos de json %s\n",data_str);
@@ -43,25 +54,26 @@ void ws_getjson_app(const char *json_string, ws_appjson_t *ws_object) {
         // Asignar memoria para ws_object
         ws_object->type = malloc(strlen(type->valuestring) + 1); // +1 para el carácter nulo
         printf("Buffer type ok\n");
-        ws_object->data = malloc(strlen(data_str) + 1);
+        ws_object->info = malloc(strlen(data_str) + 1);
         printf("Buffer data ok\n");
         // Copiar datos
         strcpy(ws_object->type, type->valuestring);
         printf("copia type ok\n");
-        strcpy(ws_object->data, data_str);
+        strcpy(ws_object->info, data_str);
         printf("copia data ok\n");
         printf("GET JSON TYPE: %s\n", ws_object->type);
-        printf("GET JSON DATA: %s\n", ws_object->data);
+        printf("GET JSON DATA: %s\n", ws_object->info);
     }
 
     // Liberar memoria
     cJSON_Delete(root);
+    return ESP_OK;
 }
 
 char *ws_setjson_app(const ws_appjson_t *ws_object) {
     cJSON *root = cJSON_CreateObject();
     cJSON_AddStringToObject(root, "type", ws_object->type);
-    cJSON_AddStringToObject(root, "data", ws_object->data);
+    cJSON_AddStringToObject(root, "data", ws_object->info);
 
     // Imprimir el JSON creado
     char *ws_json_str = cJSON_PrintUnformatted(root);
@@ -73,7 +85,7 @@ char *ws_setjson_app(const ws_appjson_t *ws_object) {
 
 
 
-static void ws_app_system(char * data_str){}
+
 
 static void ws_app_body(char * data_str){}
 
@@ -85,6 +97,22 @@ static void ws_app_section(char * data_str){}
 
 static void ws_app_footer(char * data_str){}
 
+static void ws_app_system(char * data_str){
+    ws_appjson_t ws_sys_obj;
+    esp_err_t ret= ws_getjson_tags(data_str, &ws_sys_obj, "ws-method","ws-request");
+    
+    
+    
+    if (ret==ESP_OK)
+    {
+        printf("JSON to Object: Method: %s Data: %s\n", ws_sys_obj.type, ws_sys_obj.info);
+        free(ws_sys_obj.type);
+        free(ws_sys_obj.info);
+    }
+    
+
+}
+
 static void ws_app_default(char * data_str){}
 
 void ws_app_text(char *ws_app_str) {
@@ -92,27 +120,31 @@ void ws_app_text(char *ws_app_str) {
     ESP_LOGI(TAG, "Datos recibidos %s", ws_app_str);
     // Convertir JSON a objeto
     ws_appjson_t ws_app_obj;
-    ws_getjson_app(ws_app_str, &ws_app_obj);
-    printf("JSON to Object: Type: %s Data: %s\n", ws_app_obj.type, ws_app_obj.data);
+    esp_err_t ret= ws_getjson_tags(ws_app_str, &ws_app_obj,"ws-type","ws-info");
 
-    if (strcmp(ws_app_obj.type, "ws-body")==0){
-        ws_app_body(ws_app_obj.data);
-        //función para devolver
-    }else if (strcmp(ws_app_obj.type, "ws-section")==0){
-        ws_app_section(ws_app_obj.data);
-    }else if (strcmp(ws_app_obj.type, "ws-data")==0){
-        ws_app_data(ws_app_obj.data);
-    }else if (strcmp(ws_app_obj.type, "ws-header")==0){
-        ws_app_header(ws_app_obj.data);
-    }else if (strcmp(ws_app_obj.type, "ws-footer")==0){
-        ws_app_footer(ws_app_obj.data);
-    }else if (strcmp(ws_app_obj.type, "ws-system")==0){
-        ws_app_system(ws_app_obj.data);
-    }else{
-        ws_app_default(ws_app_obj.data);
+    
+    if (ret == ESP_OK)
+    {
+        printf("JSON to Object: Type: %s Data: %s\n", ws_app_obj.type, ws_app_obj.info);
+        if (strcmp(ws_app_obj.type, "ws-body")==0){
+            ws_app_body(ws_app_obj.info);
+            //función para devolver
+        }else if (strcmp(ws_app_obj.type, "ws-section")==0){
+            ws_app_section(ws_app_obj.info);
+        }else if (strcmp(ws_app_obj.type, "ws-data")==0){
+            ws_app_data(ws_app_obj.info);
+        }else if (strcmp(ws_app_obj.type, "ws-header")==0){
+            ws_app_header(ws_app_obj.info);
+        }else if (strcmp(ws_app_obj.type, "ws-footer")==0){
+            ws_app_footer(ws_app_obj.info);
+        }else if (strcmp(ws_app_obj.type, "ws-system")==0){
+            ws_app_system(ws_app_obj.info);
+        }else{
+            ws_app_default(ws_app_obj.info);
+        }
+        free(ws_app_obj.type);
+        free(ws_app_obj.info);        
     }
-    
-    
     
     
 
@@ -126,6 +158,8 @@ void ws_app_text(char *ws_app_str) {
     
     // Liberar memoria
     free(json_str);*/
-    free(ws_app_obj.type);
-    free(ws_app_obj.data);
+
+    
+    
+
 }

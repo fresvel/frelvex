@@ -14,8 +14,8 @@ The websoket server and client communicates via json object containing the event
 has the neext structure.
 
 ws_app={
-    "type": "",
-    "data": {}
+    "ws-type": "",
+    "ws-info": {}
 }
 
 In this object the type element could be:
@@ -31,7 +31,7 @@ In the ws-content type the data variable returns a json object
 in which receives the three files html, js and css with the next
 structure:
 
-data={
+info={
     "html":"html data",
     "js":"js data",
     "css":"css data
@@ -125,8 +125,8 @@ ws_lib_js=["ws-chartjs"]
 
 
 ws_app={
-  "type":"ws-system",
-	"data":{
+  "ws-type":"ws-system",
+	"ws-info":{
     "ws-method":"ws-onload",
     "ws-request":{
         "ws-header":ws_header,
@@ -150,10 +150,6 @@ function initWebSocket() {
     websocket.onerror = onError
 }
 
-let jsws={
-  "type": "websocket",
-  "data": {"id":"ws://${window.location.host"}
-}
 
 function onOpen(event) {
     let ws_js=document.getElementById('ws-js')
