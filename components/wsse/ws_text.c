@@ -15,6 +15,10 @@ typedef struct {
     char *info;
 } ws_appjson_t;
 
+typedef struct {
+    char *type;
+    char *info;
+} ws_onload_t;
 // Recibe un json de {"tag":"", "data":{}}
 // Devuelve el type y un string de los datos
 static esp_err_t ws_getjson_tags(const char *json_string, ws_appjson_t *ws_object, const char *tag, const char *info) { 
@@ -70,6 +74,74 @@ static esp_err_t ws_getjson_tags(const char *json_string, ws_appjson_t *ws_objec
     return ESP_OK;
 }
 
+static esp_err_t ws_getarr_prop(const char *json_str, void *ws_arr_name){
+    ESP_LOGI(TAG, "Array processing!!!");
+    cJSON *root=cJSON_Parse(json_str);
+
+
+    if (root == NULL)
+    {
+        ESP_LOGE(TAG, "Error parsing JSON");
+        return ESP_FAIL;
+    }
+    
+    cJSON *arr_json=cJSON_GetObjectItem(root,ws_arr_name);
+    
+    if (!cJSON_IsArray(arr_json))
+    {
+        cJSON_Delete(root);
+        ESP_LOGW(TAG,"Error parsing");
+        return ESP_FAIL;
+    }
+
+    int arr_size=cJSON_GetArraySize(arr_json);
+    char *arr_str[arr_size];
+    ESP_LOGW(TAG,"Array size %d",arr_size);
+    for (size_t i = 0; i < arr_size; i++)
+    {
+        printf("processing%d\n",i);
+        cJSON *item=cJSON_GetArrayItem(arr_json, i);
+        printf("ITEM: %s\n",item->valuestring);
+        if (cJSON_IsString(item))
+        {
+            arr_str[i] = strdup(item->valuestring);
+            printf("ITEM$$$: %s\n",arr_str[i]);
+        }else{
+            ESP_LOGE(TAG,"The element is not a string in the position: %d\n", i);
+            printf("COntrol");
+            cJSON_Delete(root);
+            return ESP_FAIL;
+        }
+        
+    }
+
+    printf("Outside for\n");
+    for (size_t i = 0; i < arr_size; i++)
+    {
+        printf("new for %d\n",i);
+        printf("ITEM+++: %s\n",arr_str[i]);
+        ESP_LOGI(TAG,"item: %s\n", arr_str[i]);
+    }
+
+    ESP_LOGE(TAG,"TEST: %s\n",arr_str[0]);
+
+    for (size_t i = 0; i < arr_size; i++)
+    {
+        free(arr_str[i]);
+    }
+    
+
+    
+
+
+    ESP_LOGI(TAG,"HERE IT IS NECESSARY TO PROCESS THE ARRAY");
+    cJSON_Delete(root);
+    return ESP_OK;
+    
+
+
+}
+
 char *ws_setjson_app(const ws_appjson_t *ws_object) {
     cJSON *root = cJSON_CreateObject();
     cJSON_AddStringToObject(root, "type", ws_object->type);
@@ -97,19 +169,44 @@ static void ws_app_section(char * data_str){}
 
 static void ws_app_footer(char * data_str){}
 
-static void ws_app_system(char * data_str){
+static esp_err_t ws_app_system(char * data_str){
+    ESP_LOGI(TAG, "WS_APP_SYSTEM");
     ws_appjson_t ws_sys_obj;
     esp_err_t ret= ws_getjson_tags(data_str, &ws_sys_obj, "ws-method","ws-request");
-    
-    
-    
     if (ret==ESP_OK)
     {
+        if (strcmp(ws_sys_obj.type, "ws-onload")==0) //Here it is managed the ws-onload structure 
+        {
+            ESP_LOGI(TAG, "WS_APP_SYSTEM type ws-onload");
+            ws_getarr_prop(ws_sys_obj.info, "ws-header");   //Get the header
+            cJSON *root =cJSON_Parse(ws_sys_obj.info);      //Process the body requested
+            if (root!=NULL)
+            {
+                cJSON *info=cJSON_GetObjectItem(root,"ws-body");
+                printf("info 1%s\n",info->valuestring);
+                if (info==NULL)
+                {
+                    cJSON_Delete(root);
+                    ESP_LOGE(TAG, "No se pudo obtener body");
+                    return ESP_FAIL;
+                }
+
+                char* header_str=malloc(strlen(ws_sys_obj.info)+1);
+                strcpy(header_str,info->valuestring);
+                printf("info 1%s\n",header_str);
+
+            }
+            cJSON_Delete(root);
+            
+            ws_getarr_prop(ws_sys_obj.info, "ws-lib-js");   //Get the javascript libraries requested 
+            ws_getarr_prop(ws_sys_obj.info, "ws-lib-js");   //Get the css libraries requested
+        }
+
         printf("JSON to Object: Method: %s Data: %s\n", ws_sys_obj.type, ws_sys_obj.info);
         free(ws_sys_obj.type);
         free(ws_sys_obj.info);
     }
-    
+    return ESP_OK;
 
 }
 
