@@ -80,11 +80,17 @@ static esp_err_t ws_getjson_tags(const char *json_string, ws_appjson_t *ws_objec
     return ESP_OK;
 }
 
-static esp_err_t ws_getarr_files(const char *json_str, void *ws_arr_name){
+static esp_err_t ws_getarr_files(const char *json_str, void *ws_arr_name,cJSON **json_files_path){
     ESP_LOGI(TAG, "Array processing for %s type", (char*)ws_arr_name);
     cJSON *root=cJSON_Parse(json_str);
     
 
+
+    cJSON *path = cJSON_GetObjectItem(*json_files_path, ws_arr_name);
+    char *jsonString = cJSON_Print(*json_files_path);
+    printf("\n\n\n**********%s\n\n\n\n", jsonString);
+    //Add item control for null data
+    printf("\n\n\n**********%s\n\n\n", path->valuestring);
 
     if (root == NULL)
     {
@@ -173,7 +179,7 @@ static void ws_app_section(char * data_str){}
 
 static void ws_app_footer(char * data_str){}
 
-static esp_err_t ws_app_system(char * data_str, httpd_req_t *req){
+static esp_err_t ws_app_system(char * data_str, httpd_req_t *req, cJSON **json_files_path){
     ESP_LOGI(TAG, "WS_APP_SYSTEM");
     ws_appjson_t ws_sys_obj;
     esp_err_t ret= ws_getjson_tags(data_str, &ws_sys_obj, "ws-method","ws-request");
@@ -182,10 +188,10 @@ static esp_err_t ws_app_system(char * data_str, httpd_req_t *req){
         if (strcmp(ws_sys_obj.type, "ws-onload")==0) //Here it is managed the ws-onload structure 
         {
             ESP_LOGI(TAG, "WS_APP_SYSTEM type ws-onload");
-            ws_getarr_files(ws_sys_obj.info, "ws-header");   //Get the header
-            ws_getarr_files(ws_sys_obj.info, "ws-body");     //Get
-            ws_getarr_files(ws_sys_obj.info, "ws-lib-js");   //Get the javascript libraries requested 
-            ws_getarr_files(ws_sys_obj.info, "ws-lib-js");   //Get the css libraries requested
+            ws_getarr_files(ws_sys_obj.info, "ws-header",json_files_path);   //Get the header
+            ws_getarr_files(ws_sys_obj.info, "ws-body", json_files_path);     //Get
+            ws_getarr_files(ws_sys_obj.info, "ws-lib-js", json_files_path);   //Get the javascript libraries requested 
+            ws_getarr_files(ws_sys_obj.info, "ws-lib-js", json_files_path);   //Get the css libraries requested
         }
 
         printf("JSON to Object: Method: %s Data: %s\n", ws_sys_obj.type, ws_sys_obj.info);
@@ -209,8 +215,6 @@ cJSON_AddItemToObject(*json_files_path,"ws-lib-js",cJSON_CreateString("/files/js
 cJSON_AddItemToObject(*json_files_path,"ws-app-js",cJSON_CreateString("/files/js/app"));
 cJSON_AddItemToObject(*json_files_path,"ws-app-css",cJSON_CreateString("/files/css/app"));
 cJSON_AddItemToObject(*json_files_path,"ws-system",cJSON_CreateString("/files/system"));
-char *jsonString = cJSON_Print(*json_files_path);
-    printf("%s\n", jsonString);
 }
 
 void ws_app_text(char *ws_app_str, httpd_req_t *req) {
@@ -244,7 +248,7 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
         }else if (strcmp(ws_app_obj.type, "ws-footer")==0){
             ws_app_footer(ws_app_obj.info);
         }else if (strcmp(ws_app_obj.type, "ws-system")==0){
-            ws_app_system(ws_app_obj.info, req);
+            ws_app_system(ws_app_obj.info, req,&json_files_path);
         }else{
             ws_app_default(ws_app_obj.info);
         }
