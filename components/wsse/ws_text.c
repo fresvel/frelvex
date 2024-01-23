@@ -1,11 +1,15 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <string.h>
+#include <esp_http_server.h>
 #include <ws_text.h>
 #include <esp_log.h>
 #include <esp_err.h>
 #include <esp_system.h>
 #include <cJSON.h>
+#include <fsys_main.h>
+
+
 
 
 
@@ -19,6 +23,8 @@ typedef struct {
     char *type;
     char *info;
 } ws_onload_t;
+
+
 // Recibe un json de {"tag":"", "data":{}}
 // Devuelve el type y un string de los datos
 static esp_err_t ws_getjson_tags(const char *json_string, ws_appjson_t *ws_object, const char *tag, const char *info) { 
@@ -74,9 +80,10 @@ static esp_err_t ws_getjson_tags(const char *json_string, ws_appjson_t *ws_objec
     return ESP_OK;
 }
 
-static esp_err_t ws_getarr_prop(const char *json_str, void *ws_arr_name){
-    ESP_LOGI(TAG, "Array processing!!!");
+static esp_err_t ws_getarr_files(const char *json_str, void *ws_arr_name){
+    ESP_LOGI(TAG, "Array processing for %s type", (char*)ws_arr_name);
     cJSON *root=cJSON_Parse(json_str);
+    
 
 
     if (root == NULL)
@@ -106,6 +113,8 @@ static esp_err_t ws_getarr_prop(const char *json_str, void *ws_arr_name){
         {
             arr_str[i] = strdup(item->valuestring);
             printf("ITEM$$$: %s\n",arr_str[i]);
+
+            
         }else{
             ESP_LOGE(TAG,"The element is not a string in the position: %d\n", i);
             printf("COntrol");
@@ -129,11 +138,6 @@ static esp_err_t ws_getarr_prop(const char *json_str, void *ws_arr_name){
     {
         free(arr_str[i]);
     }
-    
-
-    
-
-
     ESP_LOGI(TAG,"HERE IT IS NECESSARY TO PROCESS THE ARRAY");
     cJSON_Delete(root);
     return ESP_OK;
@@ -169,7 +173,7 @@ static void ws_app_section(char * data_str){}
 
 static void ws_app_footer(char * data_str){}
 
-static esp_err_t ws_app_system(char * data_str){
+static esp_err_t ws_app_system(char * data_str, httpd_req_t *req){
     ESP_LOGI(TAG, "WS_APP_SYSTEM");
     ws_appjson_t ws_sys_obj;
     esp_err_t ret= ws_getjson_tags(data_str, &ws_sys_obj, "ws-method","ws-request");
@@ -178,28 +182,10 @@ static esp_err_t ws_app_system(char * data_str){
         if (strcmp(ws_sys_obj.type, "ws-onload")==0) //Here it is managed the ws-onload structure 
         {
             ESP_LOGI(TAG, "WS_APP_SYSTEM type ws-onload");
-            ws_getarr_prop(ws_sys_obj.info, "ws-header");   //Get the header
-            cJSON *root =cJSON_Parse(ws_sys_obj.info);      //Process the body requested
-            if (root!=NULL)
-            {
-                cJSON *info=cJSON_GetObjectItem(root,"ws-body");
-                printf("info 1%s\n",info->valuestring);
-                if (info==NULL)
-                {
-                    cJSON_Delete(root);
-                    ESP_LOGE(TAG, "No se pudo obtener body");
-                    return ESP_FAIL;
-                }
-
-                char* header_str=malloc(strlen(ws_sys_obj.info)+1);
-                strcpy(header_str,info->valuestring);
-                printf("info 1%s\n",header_str);
-
-            }
-            cJSON_Delete(root);
-            
-            ws_getarr_prop(ws_sys_obj.info, "ws-lib-js");   //Get the javascript libraries requested 
-            ws_getarr_prop(ws_sys_obj.info, "ws-lib-js");   //Get the css libraries requested
+            ws_getarr_files(ws_sys_obj.info, "ws-header");   //Get the header
+            ws_getarr_files(ws_sys_obj.info, "ws-body");     //Get
+            ws_getarr_files(ws_sys_obj.info, "ws-lib-js");   //Get the javascript libraries requested 
+            ws_getarr_files(ws_sys_obj.info, "ws-lib-js");   //Get the css libraries requested
         }
 
         printf("JSON to Object: Method: %s Data: %s\n", ws_sys_obj.type, ws_sys_obj.info);
@@ -212,7 +198,30 @@ static esp_err_t ws_app_system(char * data_str){
 
 static void ws_app_default(char * data_str){}
 
-void ws_app_text(char *ws_app_str) {
+
+static void ws_json_config_path(cJSON **json_files_path){
+*json_files_path=cJSON_CreateObject();
+cJSON_AddItemToObject(*json_files_path,"ws-body",cJSON_CreateString("/files/html/body"));
+cJSON_AddItemToObject(*json_files_path,"ws-header",cJSON_CreateString("/files/html/header"));
+cJSON_AddItemToObject(*json_files_path,"ws-footer",cJSON_CreateString("/files/html/footer")); 
+cJSON_AddItemToObject(*json_files_path,"ws-lib-css",cJSON_CreateString("/files/css/lib"));
+cJSON_AddItemToObject(*json_files_path,"ws-lib-js",cJSON_CreateString("/files/js/lib"));
+cJSON_AddItemToObject(*json_files_path,"ws-app-js",cJSON_CreateString("/files/js/app"));
+cJSON_AddItemToObject(*json_files_path,"ws-app-css",cJSON_CreateString("/files/css/app"));
+cJSON_AddItemToObject(*json_files_path,"ws-system",cJSON_CreateString("/files/system"));
+char *jsonString = cJSON_Print(*json_files_path);
+    printf("%s\n", jsonString);
+}
+
+void ws_app_text(char *ws_app_str, httpd_req_t *req) {
+
+
+    /*THIS WILL BE TO SEND TO MAIN OR TO A CONFIG OR INIT FUNCTION*/
+    cJSON *json_files_path=NULL;
+    ws_json_config_path(&json_files_path);
+
+    char *jsonString = cJSON_Print(json_files_path);
+    printf("%s\n", jsonString);
     
     ESP_LOGI(TAG, "Datos recibidos %s", ws_app_str);
     // Convertir JSON a objeto
@@ -235,7 +244,7 @@ void ws_app_text(char *ws_app_str) {
         }else if (strcmp(ws_app_obj.type, "ws-footer")==0){
             ws_app_footer(ws_app_obj.info);
         }else if (strcmp(ws_app_obj.type, "ws-system")==0){
-            ws_app_system(ws_app_obj.info);
+            ws_app_system(ws_app_obj.info, req);
         }else{
             ws_app_default(ws_app_obj.info);
         }

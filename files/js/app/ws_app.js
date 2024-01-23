@@ -21,7 +21,7 @@ ws_app={
 In this object the type element could be:
 - ws-body.- To change the content of the ws-body div element
 - ws-section.- To change the content of a specific section
-- ws-data.- To get information in a directly mode.
+- ws-linker.- To get information in a directly mode.
 - ws-header.- To change the content of the header
 - ws-footer.- To change the content of the footer
 - ws-system To manage functions like autentications, erros ota.
@@ -43,7 +43,7 @@ At the end of this request the next data will be overwritten
 - The innerhtml of the ws-css
 */
 
-ws_body="ws-ota"
+ws_body=["ws-ota"]
 
 /*
 2. ws-section

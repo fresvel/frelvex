@@ -50,6 +50,64 @@ Filesystem allows you to magane the used directory for web applications like htt
 
 This directory will contain the files for magage the web applications wia websocket in which you would be load web pages making partials requests.
 
+7. Websocket
+On the websocket server requests will be processed in two ways: as a data request or as a file request. All requests arrive to ws_hadler and then if it has the correct schema for a ws_app request, them are directionated to six diferent functions. For manage the ws_app requests a json object is used, and its structure is described below:
+
+ws_app={
+    "ws-type": "",
+    "ws-info": {}
+}
+
+
+Where ws-type is a string that contains the name of one of the six diferents functions that are managed on the websocket server. On another hand ws-info is an object wich contains the information for the final request. The different types are as follows:
+
+- ws-body.- To change the content of the ws-body div element
+- ws-section.- To change the content of a specific section
+- ws-linker.- To get information in a directly mode in a public subscribe scheme
+- ws-header.- To change the content of the header
+- ws-footer.- To change the content of the footer
+- ws-system.- To manage functions on the system like autentications, erros ota.
+
+
+The object structure for the ws-linker has the following properties:
+
+ws-linker={
+    "ws-method"="publish/subscribe",
+    "ws-info"={
+        "link-client":["session", "client-id"], //the variable session is stablished via ws-system
+        "ws-data":["dir1","data 1", "dir2", "data 2", "dirn", "datan"] //in the case of subscribe only dir no data
+    }
+}/*make this only with sockets not websockets and compare with websockets coap and similars*/
+
+The object structure for the ws-system has the following properties:
+ws-system={
+    "ws-method"="ws-functions",
+    "ws-info"={
+        "param1":[]
+        "param2":[]
+    }
+}
+
+For body, section header and footer the structure is as follows:
+
+ws-content={
+    "ws-method"="ws-header/footer...",
+    "ws-info"={
+        "param1":[]
+        "param2":[]
+    }
+}// here param refers to a id in thml and a file in esp32
+
+
+
+For the ws-linker type the websocket server creates a task wich will manage the suscription and publish schema for clients, the array for this fuction is diferent of others and the idea is to interchange data betwen clients and server in a directly mode. The another methods use a simple string array, and will return the files with the names of the array items. 
+
+
+
+
+
+
+
 
 # Websocket-based Firmware for Iot Devices
 

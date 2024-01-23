@@ -78,7 +78,7 @@ esp_err_t ws_process_text(httpd_ws_frame_t *ws_pkt,httpd_req_t *req){
     
     
 
-    ws_app_text((char*)ws_pkt->payload);
+    ws_app_text((char*)ws_pkt->payload, req);
 
     ESP_LOGI(TAG, "Received text packet with message: %s", ws_pkt->payload);
     

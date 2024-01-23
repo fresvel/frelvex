@@ -61,7 +61,7 @@ static esp_err_t ws_appjs_handler(httpd_req_t *req){
         ESP_LOGI(TAG, "New client connected appjs");
         
         httpd_resp_set_type(req, "text/javascript");
-        read_file("/files/js/footer/ws_app.js",httpd_send_file,req);
+        read_file("/files/js/app/ws_app.js",httpd_send_file,req);
         httpd_resp_sendstr_chunk(req,NULL);
         
     }
