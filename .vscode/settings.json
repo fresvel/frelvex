@@ -24,6 +24,8 @@
         "utility": "c",
         "esp_https_server.h": "c",
         "ota_main.h": "c",
-        "freertos.h": "c"
+        "freertos.h": "c",
+        "sdkconfig.h": "c",
+        "*.tcc": "c"
     }
 }

@@ -30,8 +30,8 @@ config_gpio();
 config_uart();
 config_wifi();
 
-config_fsys();
-read_file("/spiffs/html/panel.html", funcion_send,NULL);
+fsys_init();
+//fsys_xFuntion_file("/spiffs/html/panel.html", funcion_send,NULL);
 
 //funcion_ota();
 printf("\n*****Iniciando OTA*****\n");

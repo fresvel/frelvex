@@ -10,6 +10,10 @@
                 "${config:idf.espAdfPathWin}/components/**",
                 "${workspaceFolder}/**"
             ],
+            "defines": [
+                "CONFIG_HTTPD_WS_SUPPORT=1",
+                "CONFIG_ESP_HTTPS_SERVER_ENABLE=1"
+            ],
             "browse": {
                 "path": [
                     "${config:idf.espIdfPath}/components",
@@ -20,6 +24,7 @@
                 ],
                 "limitSymbolsToIncludedHeaders": false
             }
+
         }
     ],
     "version": 4

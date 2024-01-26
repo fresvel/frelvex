@@ -327,7 +327,7 @@ void config_wsse(void)
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &connect_handler, &server));
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &disconnect_handler, &server));
     printf("\nInit websocket configuration\n");
-    void ws_app();
+    //void ws_app();
     //xTaskCreate(wss_server_send_messages,"send messages",8192,&server,10,NULL);
     printf("\nWebsocket configuration was finished successfully\n");
 }

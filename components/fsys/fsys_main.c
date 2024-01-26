@@ -9,10 +9,10 @@
 #include "string.h"
 
 
-typedef void (*file_send_t)(void *req, char* buffer);
+typedef void (*file_send_t)(void *req, char* buffer, uint8_t state);
 
 static const char* TAG="File System";
-void config_fsys(void){
+void fsys_init(void){
 ESP_LOGI(TAG, "config_fsys\n");
 
 esp_vfs_spiffs_conf_t fs_cfg={
@@ -32,12 +32,12 @@ ESP_LOGI(TAG, "Información de la partición de archivos %d usado de %d\n", used
 ESP_LOGI(TAG, "Abriendo archivo");
 }
 
-void read_file(char *path, file_send_t file_send, void *param){
+esp_err_t fsys_xFuntion_file(char *path, file_send_t file_send, void *param){
     FILE* file=fopen(path, "r");
 if (file==NULL)
 {
     ESP_LOGE(TAG, "Error abriendo archivo : %s\n", path);
-    return;
+    return ESP_FAIL;
 }
 
  size_t stack_free = uxTaskGetStackHighWaterMark(NULL);
@@ -60,20 +60,23 @@ if(block_size<file_size){
     printf("Reservando variable\n");
     char buffer[block_size+1];
     printf("Variable reservada\n");
-    for (int i = 0; i <= (int)(file_size/block_size); i++)
+    int end=(int)(file_size/block_size);
+    for (int i = 0; i <=end ; i++)
     {
+    end=(int)(file_size/block_size);
+    uint8_t state=(uint8_t)(1/end)*100;
     //printf("Leyendo bloque\n");
     memset(buffer,0,block_size+1);
     fread(buffer,1,block_size,file);
     //printf("%s",buffer); 
-    file_send(param, buffer);
+    file_send(param, buffer,state);
     }
 }else{
     char buffer[file_size];
     memset(buffer,0,file_size);
     fread(buffer,1,file_size,file);
     //printf("%s",buffer);
-    file_send(param, buffer);
+    file_send(param, buffer,(uint8_t)100);
 
 }
     //file_send(param, NULL);//Indica que finaliza el envío del file
@@ -81,4 +84,5 @@ if(block_size<file_size){
     printf("The file was printed successfully");
 
 fclose(file);
+return ESP_OK;
 }

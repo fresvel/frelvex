@@ -7,7 +7,7 @@
 static const char * TAG="ws_get";
 
 
-static void httpd_send_file(void*param,char * buffer){
+static void httpd_send_file(void*param, char *buffer, uint8_t state){
     httpd_req_t *req =(httpd_req_t*)param;
     httpd_resp_sendstr_chunk(req,buffer);
     printf("Sending file...\n");
@@ -21,8 +21,7 @@ static esp_err_t paneljs_handler(httpd_req_t *req){
         ESP_LOGI(TAG, "New client connected");
         
         httpd_resp_set_type(req, "text/javascript");
-        read_file("/spiffs/js/panel.js",httpd_send_file,req);
-        //httpd_resp_send(req, buffer,HTTPD_RESP_USE_STRLEN);
+        fsys_xFuntion_file("/spiffs/js/panel.js",httpd_send_file,req);// fsys_xFuntion_file le pasa el buffer del archivo y req a la función 
         
     }
     return ESP_OK;
@@ -40,10 +39,10 @@ static esp_err_t paneljs_handler(httpd_req_t *req){
 static esp_err_t ws_appthml_handler(httpd_req_t *req){
         ESP_LOGI(TAG, "New client connected, OTA HTML");
         httpd_resp_set_type(req, "text/html");
-        read_file("/files/html/header/head.html",httpd_send_file,req); // envía los archivos
-        //read_file("/files/html/header/header.html",httpd_send_file,req);
-        read_file("/files/html/body/ota/ota.html",httpd_send_file,req);
-        read_file("/files/html/footer/footer.html",httpd_send_file,req);
+        fsys_xFuntion_file("/files/html/header/head.html",httpd_send_file,req); // envía los archivos
+        //fsys_xFuntion_file("/files/html/header/header.html",httpd_send_file,req);
+        fsys_xFuntion_file("/files/html/body/ota/ota.html",httpd_send_file,req);
+        fsys_xFuntion_file("/files/html/footer/footer.html",httpd_send_file,req);
         httpd_resp_sendstr_chunk(req,NULL);//Finaliza el envío de los archivos
     return ESP_OK;
 }
@@ -61,7 +60,7 @@ static esp_err_t ws_appjs_handler(httpd_req_t *req){
         ESP_LOGI(TAG, "New client connected appjs");
         
         httpd_resp_set_type(req, "text/javascript");
-        read_file("/files/js/app/ws_app.js",httpd_send_file,req);
+        fsys_xFuntion_file("/files/js/app/ws_app.js",httpd_send_file,req);
         httpd_resp_sendstr_chunk(req,NULL);
         
     }
@@ -82,7 +81,7 @@ static esp_err_t chartjs_handler(httpd_req_t *req){
     if (req->method == HTTP_GET){
         ESP_LOGI(TAG, "New client connected");
         httpd_resp_set_type(req, "text/javascript");
-        read_file("/spiffs/js/chart.js",httpd_send_file,req);
+        fsys_xFuntion_file("/spiffs/js/chart.js",httpd_send_file,req);
         
     }
     return ESP_OK;      
@@ -102,7 +101,7 @@ static esp_err_t ws_bulmacss_handler(httpd_req_t *req){
         ESP_LOGI(TAG, "New client connected");
         
         httpd_resp_set_type(req, "text/css");
-        read_file("/files/css/lib/bulma.css",httpd_send_file,req);
+        fsys_xFuntion_file("/files/css/lib/bulma.css",httpd_send_file,req);
         httpd_resp_sendstr_chunk(req,NULL);
         
     }
@@ -121,7 +120,7 @@ static esp_err_t ws_logoimg_handler(httpd_req_t *req){
     if (req->method == HTTP_GET){
         ESP_LOGI(TAG, "New client connected");
         httpd_resp_set_type(req, "image/svg+xml");
-        read_file("/files/img/logo.svg",httpd_send_file,req);
+        fsys_xFuntion_file("/files/img/logo.svg",httpd_send_file,req);
         httpd_resp_sendstr_chunk(req,NULL);
     }
     return ESP_OK;      
@@ -139,7 +138,7 @@ static esp_err_t ota_handler(httpd_req_t *req){
     if (req->method == HTTP_GET){
         ESP_LOGI(TAG, "New client connected, OTA HTML");
         httpd_resp_set_type(req, "text/html");
-        read_file("/files/html/body/ota/ota.html",httpd_send_file,req);
+        fsys_xFuntion_file("/files/html/body/ota/ota.html",httpd_send_file,req);
         
     }
     return ESP_OK;
@@ -165,7 +164,7 @@ static esp_err_t panel_handler(httpd_req_t *req){
         ESP_LOGI(TAG, "New client connected");
         
         httpd_resp_set_type(req, "text/html");
-        read_file("/spiffs/html/panel.html",httpd_send_file,req);
+        fsys_xFuntion_file("/spiffs/html/panel.html",httpd_send_file,req);
         //httpd_resp_send(req, buffer,HTTPD_RESP_USE_STRLEN);
         
     }
