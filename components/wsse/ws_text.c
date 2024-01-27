@@ -17,7 +17,7 @@ static const char *TAG="ws-text";
 typedef struct {
     char *type;
     char *info;
-} ws_appjson_t;
+} ws_strjson_t;
 
 typedef struct {
     char *type;
@@ -27,102 +27,8 @@ typedef struct {
 typedef struct {
     httpd_req_t *req;
     char *ws_fn;
-    char *ws_path;
 }ws_send_file_t;
 
-
-// Recibe un json de {"tag":"", "data":{}}
-// Devuelve el type y un string de los datos
-static esp_err_t ws_getjson_tags(const char *json_string, ws_appjson_t *ws_object, const char *tag, const char *info) { 
-    printf("Iniciando JSON\n");
-
-    cJSON *root = cJSON_Parse(json_string);
-    printf("conversión realizada\n");
-    if (root == NULL) {
-        // Manejar el error de análisis JSON
-        printf("Error parsing JSON\n");
-        return ESP_FAIL;
-    }
-
-    printf("Datos obtenidos de json\n");
-
-    cJSON *type = cJSON_GetObjectItem(root, tag);
-    cJSON *data = cJSON_GetObjectItem(root, info);
-    
-    if (type == NULL||data == NULL) 
-    {
-        ESP_LOGE(TAG, "Etiquetas no encontradas");
-        return ESP_FAIL;
-    }
-    
-    char* data_str=cJSON_PrintUnformatted(data);
-
-    printf("Datos obtenidos de json %s\n",data_str);
-
-    if (type != NULL && data != NULL) {
-
-        //printf("Dentro del IF\n");
-        // Evitar errores si el objeto no tiene las claves esperadas
-        size_t len_type = strlen(type->valuestring);
-        printf("Longitud de type ok %d\n",len_type);
-        size_t len_data = strlen(data_str);
-        printf("Longitud de data lendata %d\n",len_data);
-        // Asignar memoria para ws_object
-        ws_object->type = malloc(strlen(type->valuestring) + 1); // +1 para el carácter nulo
-        printf("Buffer type ok\n");
-        ws_object->info = malloc(strlen(data_str) + 1);
-        printf("Buffer data ok\n");
-        // Copiar datos
-        strcpy(ws_object->type, type->valuestring);
-        printf("copia type ok\n");
-        strcpy(ws_object->info, data_str);
-        printf("copia data ok\n");
-        printf("GET JSON TYPE: %s\n", ws_object->type);
-        printf("GET JSON DATA: %s\n", ws_object->info);
-    }
-
-    // Liberar memoria
-    cJSON_Delete(root);
-    return ESP_OK;
-}
-
-
-static void ws_send_files_fin(void *param){
-
-        ESP_LOGI(TAG,"Sending fin state of ws file sender\n");
-        ws_send_file_t *ws_sf=(ws_send_file_t *)param;
-        httpd_req_t *req=(httpd_req_t*)ws_sf->req;
-        char* ws_fn=(char*)ws_sf->ws_fn;
-        char* ws_path=(char*)ws_sf->ws_path;
-
-
-
-        printf("\033[0;37m");
-        printf("Valor de ws_fn: %s\n",ws_fn);
-        printf("Valor de ws_path: %s\n",ws_path);
-
-
-
-        cJSON *root = cJSON_CreateObject();
-        cJSON_AddStringToObject(root, "function", (char*)ws_sf->ws_fn);
-        cJSON_AddStringToObject(root, "data", "");
-        cJSON_AddStringToObject(root, "state", "fin");
-
-    // Imprimir el JSON creado
-    char *ws_json_str = cJSON_PrintUnformatted(root);
-    printf("Created JSON: %s\n", ws_json_str);
-
-    
-
-        httpd_ws_frame_t send_pkt;
-        memset(&send_pkt, 0, sizeof(httpd_ws_frame_t));
-        send_pkt.payload = (uint8_t*)ws_json_str;
-        send_pkt.len = strlen(ws_json_str);
-        send_pkt.type = HTTPD_WS_TYPE_TEXT;
-        esp_err_t ret = httpd_ws_send_frame(req, &send_pkt);
-    
-    cJSON_Delete(root);
-}
 
 
 static void ws_send_files_init(void *param, char *buffer, u_int8_t state){
@@ -131,13 +37,9 @@ static void ws_send_files_init(void *param, char *buffer, u_int8_t state){
         ws_send_file_t *ws_sf=(ws_send_file_t *)param;
         httpd_req_t *req=(httpd_req_t*)ws_sf->req;
         char* ws_fn=(char*)ws_sf->ws_fn;
-        char* ws_path=(char*)ws_sf->ws_path;
-
-
 
         printf("\033[0;35m");
         printf("Valor de ws_fn: %s\n",ws_fn);
-        printf("Valor de ws_path: %s\n",ws_path);
 
 
 
@@ -165,94 +67,7 @@ static void ws_send_files_init(void *param, char *buffer, u_int8_t state){
 }
 
 
-static esp_err_t ws_getarr_files(const char *json_str, void *ws_arr_name,cJSON **json_files_path, httpd_req_t*req){
-    ESP_LOGI(TAG, "Array processing for %s type", (char*)ws_arr_name);
-    cJSON *root=cJSON_Parse(json_str);
-    cJSON *path_json = cJSON_GetObjectItem(*json_files_path, ws_arr_name);
-
-    printf("\n\n\nFile directory in fsys: %s\n\n\n", path_json->valuestring);  //Este es el directorio de archivos del sistema
-
-    if (root == NULL)
-    {
-        ESP_LOGE(TAG, "Error parsing JSON");
-        return ESP_FAIL;
-    }
-    
-    cJSON *arr_json=cJSON_GetObjectItem(root,ws_arr_name);
-    
-    if (!cJSON_IsArray(arr_json))
-    {
-        cJSON_Delete(root);
-        ESP_LOGW(TAG,"Error parsing");
-        return ESP_FAIL;
-    }
-
-    int arr_size=cJSON_GetArraySize(arr_json);
-    char *arr_str[arr_size];
-    ESP_LOGW(TAG,"Array size %d",arr_size);
-    for (size_t i = 0; i < arr_size; i++)
-    {
-        printf("processing%d\n",i);
-        cJSON *item=cJSON_GetArrayItem(arr_json, i);
-        printf("ITEM: %s\n",item->valuestring);
-        if (cJSON_IsString(item))
-        {
-
-            ws_send_file_t ws_file;
-            ws_file.req=req;
-            ws_file.ws_fn=ws_arr_name;
-
-            size_t path_len=strlen(path_json->valuestring)+strlen(item->valuestring);
-            char str_path[path_len+1]; //revisar longidud
-            sprintf(str_path, "%s/%s",path_json->valuestring,item->valuestring);
-            printf("path: %s\n",str_path);
-            ws_file.ws_path=path_json->valuestring; // revisar si es que se está utilizando
-
-
-
-
-            arr_str[i] = strdup(item->valuestring);
-            printf("ITEM$$$: %s\n",arr_str[i]);
-            //ws_send_files(req,path_json->valuestring);
-            fsys_xFuntion_file(str_path,ws_send_files_init,&ws_file);
-            ws_send_files_init(&ws_file,"Datos de función read", 77);
-            ws_send_files_fin(&ws_file);
-            //free(str_path);
-            //Una vez que finaliza envíar señal de fin
-
-            
-        }else{
-            ESP_LOGE(TAG,"The element is not a string in the position: %d\n", i);
-            printf("COntrol");
-            cJSON_Delete(root);
-            return ESP_FAIL;
-        }
-        
-    }
-
-    printf("Outside for\n");
-    for (size_t i = 0; i < arr_size; i++)
-    {
-        printf("new for %d\n",i);
-        printf("ITEM+++: %s\n",arr_str[i]);
-        ESP_LOGI(TAG,"item: %s\n", arr_str[i]);
-    }
-
-    ESP_LOGE(TAG,"TEST: %s\n",arr_str[0]);
-
-    for (size_t i = 0; i < arr_size; i++)
-    {
-        free(arr_str[i]);
-    }
-    ESP_LOGI(TAG,"HERE IT IS NECESSARY TO PROCESS THE ARRAY");
-    cJSON_Delete(root);
-    return ESP_OK;
-    
-
-
-}
-
-char *ws_setjson_app(const ws_appjson_t *ws_object) {
+char *ws_setjson_app(const ws_strjson_t *ws_object) {
     cJSON *root = cJSON_CreateObject();
     cJSON_AddStringToObject(root, "type", ws_object->type);
     cJSON_AddStringToObject(root, "data", ws_object->info);
@@ -269,35 +84,12 @@ char *ws_setjson_app(const ws_appjson_t *ws_object) {
 
 
 
-static void ws_app_body(char * data_str){}
+static void ws_app_data(char * data_str){
 
-static void ws_app_data(char * data_str){}
-
-static void ws_app_header(char * data_str){}
-
-static void ws_app_section(char * data_str){}
-
-static void ws_app_footer(char * data_str){}
+}
 
 static esp_err_t ws_app_system(char * data_str, httpd_req_t *req, cJSON **json_files_path){
     ESP_LOGI(TAG, "WS_APP_SYSTEM");
-    ws_appjson_t ws_sys_obj;
-    esp_err_t ret= ws_getjson_tags(data_str, &ws_sys_obj, "ws-method","ws-request");
-    if (ret==ESP_OK)
-    {
-        if (strcmp(ws_sys_obj.type, "ws-onload")==0) //Here it is managed the ws-onload structure 
-        {
-            ESP_LOGI(TAG, "WS_APP_SYSTEM type ws-onload");
-            ws_getarr_files(ws_sys_obj.info, "ws-header",json_files_path,req);   //Get the header
-            ws_getarr_files(ws_sys_obj.info, "ws-body", json_files_path, req);     //Get
-            ws_getarr_files(ws_sys_obj.info, "ws-lib-js", json_files_path, req);   //Get the javascript libraries requested 
-            ws_getarr_files(ws_sys_obj.info, "ws-lib-css", json_files_path, req);   //Get the css libraries requested
-        }
-
-        printf("JSON to Object: Method: %s Data: %s\n", ws_sys_obj.type, ws_sys_obj.info);
-        free(ws_sys_obj.type);
-        free(ws_sys_obj.info);
-    }
     return ESP_OK;
 
 }
@@ -310,57 +102,90 @@ static void ws_json_config_path(cJSON **json_files_path){
 cJSON_AddItemToObject(*json_files_path,"ws-body",cJSON_CreateString("/files/html/body"));
 cJSON_AddItemToObject(*json_files_path,"ws-header",cJSON_CreateString("/files/html/header"));
 cJSON_AddItemToObject(*json_files_path,"ws-footer",cJSON_CreateString("/files/html/footer")); 
-cJSON_AddItemToObject(*json_files_path,"ws-lib-css",cJSON_CreateString("/files/css/lib"));
-cJSON_AddItemToObject(*json_files_path,"ws-lib-js",cJSON_CreateString("/files/js/lib"));
-cJSON_AddItemToObject(*json_files_path,"ws-app-js",cJSON_CreateString("/files/js/app"));
-cJSON_AddItemToObject(*json_files_path,"ws-app-css",cJSON_CreateString("/files/css/app"));
+cJSON_AddItemToObject(*json_files_path,"ws-css",cJSON_CreateString("/files/css/lib"));
+cJSON_AddItemToObject(*json_files_path,"ws-js",cJSON_CreateString("/files/js/lib"));
 cJSON_AddItemToObject(*json_files_path,"ws-system",cJSON_CreateString("/files/system"));
 }
 
 void ws_app_text(char *ws_app_str, httpd_req_t *req) {
 
-
     /*THIS WILL BE TO SEND TO MAIN OR TO A CONFIG OR INIT FUNCTION*/
     cJSON *json_files_path=NULL;
     ws_json_config_path(&json_files_path);
-
     char *jsonString = cJSON_Print(json_files_path);
     printf("%s\n", jsonString);
-    
-    ESP_LOGI(TAG, "Datos recibidos %s", ws_app_str);
+    ESP_LOGE(TAG, "Datos recibidos %s", ws_app_str);
     // Convertir JSON a objeto
-    ws_appjson_t ws_app_obj;
-    esp_err_t ret= ws_getjson_tags(ws_app_str, &ws_app_obj,"ws-type","ws-info");
+    ws_strjson_t ws_app_obj;
+    cJSON *ws_obj_req=cJSON_Parse(ws_app_str);
 
-    
-    if (ret == ESP_OK)
-    {
-        printf("JSON to Object: Type: %s Data: %s\n", ws_app_obj.type, ws_app_obj.info);
-        if (strcmp(ws_app_obj.type, "ws-body")==0){
-            ws_app_body(ws_app_obj.info);
-            //función para devolver
-        }else if (strcmp(ws_app_obj.type, "ws-section")==0){
-            ws_app_section(ws_app_obj.info);
-        }else if (strcmp(ws_app_obj.type, "ws-data")==0){
-            ws_app_data(ws_app_obj.info);
-        }else if (strcmp(ws_app_obj.type, "ws-header")==0){
-            ws_app_header(ws_app_obj.info);
-        }else if (strcmp(ws_app_obj.type, "ws-footer")==0){
-            ws_app_footer(ws_app_obj.info);
-        }else if (strcmp(ws_app_obj.type, "ws-system")==0){
-            ws_app_system(ws_app_obj.info, req,&json_files_path);
-        }else{
-            ws_app_default(ws_app_obj.info);
-        }
-        free(ws_app_obj.type);
-        free(ws_app_obj.info);        
+    if(ws_obj_req==NULL){
+        ESP_LOGE(TAG, "Error! Not posible to get object from string: %s", ws_app_str);
+        return;
     }
     
-    
+    cJSON *ws_type=cJSON_GetObjectItem(ws_obj_req,"ws-type");
+    if (!cJSON_IsString(ws_type))
+    {
+        ESP_LOGI(TAG, "The element ws-type must be a string\n");
+        return;
+    }
 
+    char* ws_strtype=ws_type->valuestring;
+    printf("ws-type %s\n", ws_type->valuestring);
+    
+    cJSON *ws_info=cJSON_GetObjectItem(ws_obj_req,"ws-info");
+
+    if (cJSON_IsArray(ws_info))
+    {
+        ESP_LOGI(TAG, "The ws-info element is an Array, requesting files\n");
+        int arr_size=cJSON_GetArraySize(ws_info);
+        for (size_t i = 0; i < arr_size; i++)
+        {
+            cJSON *item = cJSON_GetArrayItem(ws_info,i);
+            if (cJSON_IsString(item))
+            {
+                ws_send_file_t ws_file;
+                ws_file.req=req;
+                ws_file.ws_fn=ws_strtype;
+                char* base_path=cJSON_GetObjectItem(json_files_path,ws_strtype)->valuestring;
+                char ws_path[strlen(ws_strtype)+strlen(base_path)+1];
+                sprintf(ws_path,"%s/%s",base_path,item->valuestring);
+                printf("Path value to get file %s\n",ws_path); 
+
+                fsys_xFuntion_file(ws_path,ws_send_files_init,&ws_file);
+                //free(str_path);
+                //Una vez que finaliza envíar señal de fin
+
+                
+            }else{
+                ESP_LOGE(TAG,"The element is not a string in the position: %d\n", i);
+                printf("COntrol");
+                cJSON_Delete(item);
+                return ;
+            }
+
+
+
+        }
+
+    }else if (cJSON_IsObject(ws_info))
+    {
+        ESP_LOGI(TAG, "The ws-info element is an Objetc\n");
+    }else{
+        ESP_LOGI(TAG, "The ws-info element must be an array or object type");
+        return;
+    }
+
+
+
+/*tttttttttttttttttttt*/
+    
+    ESP_LOGE(TAG, "End of new method");
+    
     /*
     // Convertir objeto a JSON
-    ws_appjson_t obj = {"tipo de ws", "datos de proceso"};
+    ws_strjson_t obj = {"tipo de ws", "datos de proceso"};
     printf("Iniciando conversión\n");
 
     char *json_str = ws_setjson_app(&obj);

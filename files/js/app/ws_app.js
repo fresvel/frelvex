@@ -1,130 +1,32 @@
-//Se puede manipular como blob desde fylesystem
-
-ws_header=["ws-navbar","ws-led"] // incluir los elementos que se necesitan
-
-/*
-The loaded content is the indicated in show variable, the path
-is the directory on websoket server to get the file for the
-content which has two or tree elements: html, js and css. The
-name of these three elements are mirrored in each directory 
-only changes their extensions. When websoket receives a request it 
-returns the three files if that exists.
-
-The websoket server and client communicates via json object containing the event data which 
-has the neext structure.
+/*Each of the next elements are arrays wich contains the base paths to the requested files */
+ws_header=["ws-navbar","ws-led"]    // Type of ws request that manages the header. Points to files/html/header
+ws_body=["panel/panel.html"]        // Type of ws request that manages the body. Points to files/html/body
+ws_lib_css=["bulma.css"]            // Type of ws request that manages the ccs components. Points to files/ccs
+ws_lib_js=["ws-chartjs"]            // Type of ws request that manages the javascript components. Points to files/js
+ws_footer=["panel/panel.html"]      // Type of ws request that manages the footer. Points to files/html/footer
+ws_section=[]                       // Type of ws request that manages a section of body. Points to files/html/section
+ws_system={}                        // This js object is used to create functions 
+/** At the first load the browser get the basic elements which includes 
+ * header, basic body, footer, ccs styles default and this javascript.
+ * For every request you must provide a json object containing
+ * a websocket request with the following structure:
+ * ws_app={
+ *        "ws-type":"name-function",
+ *        "ws-info":ws_info_objet 
+ * }
+ * Only ws_system uses an object for the request, for others it is used 
+ * an string array wich contains the name of the files pointing to a path
+ * in files directory.     
+*/
 
 ws_app={
-    "ws-type": "",
-    "ws-info": {}
+  "ws-type":"ws-body",
+  "ws-info":["ota/ota.html"]
 }
 
-In this object the type element could be:
-- ws-body.- To change the content of the ws-body div element
-- ws-section.- To change the content of a specific section
-- ws-linker.- To get information in a directly mode.
-- ws-header.- To change the content of the header
-- ws-footer.- To change the content of the footer
-- ws-system To manage functions like autentications, erros ota.
 
-1. ws-body
-In the ws-content type the data variable returns a json object 
-in which receives the three files html, js and css with the next
-structure:
-
-info={
-    "html":"html data",
-    "js":"js data",
-    "css":"css data
-}
-
-At the end of this request the next data will be overwritten
-- The innerhtml of the ws-body id
-- The innerhtml of the ws-js id
-- The innerhtml of the ws-css
-*/
-
-ws_body=["panel/panel.html"]
-
-/*
-2. ws-section
-This type of event allows you to change the content or the properties of one
-section inside the ws-body via the ws-section id. Alternatively
-you could change the content of ws-js section adding, removing or
-overwriting the content of the function.
-
-For this goal the structure of the data object is as follows:
-
-data={
-    "html": {"inner":"","properties":{}},
-    "js": {functions},
-    "css":{styles},
-}
-
-The object functions will contain the new functions to add or overwrite,
-and the structure is as follows:
-
-functions={
-    "name":"function",
-    "name2":"function",
-}
-
-Finally for the styles object the idea is the same.
-
-The general idea is that each ws-body element knows its functions and sections,
-so you could modify the structure of them via ws-section requests. Additionally 
-every function and id section and style must be registed by ws_section and ws_function 
-objects.
-*/
-
-ws_section={ //si enable es true se carga en el arranque actualiza una sección del content
-        "cnt-x":{
-            "sec_1":{"path":"","loaded":false},
-            "sec_2":{"path":"","loaded":false},
-            "sec_3":{"path":"","loaded":false},
-            "sec_4":{"path":"","loaded":false},
-            "sec_5":{"path":"","loaded":false},
-        }
-}
-
-/*
-El objeto ws_functions contiene la estructura básica
-
-ws_functions={ 
-    "cnt-x":functions
-}
-
-En donde el objeto functions contiene las funciones del elemento class 
-ws-body. En el ejemplo cnt-x es el id del elemento ws-body
-
-functions= {
-        "name1":fn1,
-        "name2":fn2,
-}
-*/
-
-ws_functions={ 
-    "ws-body":["functions"]
-}
-
-//Validar ya que es posible que no se carguen los estilos
-ws_styles={
-    "ws-body":["led-css"],
-
-}
-
-/*Verify if it is posible to get first the websocket connection
-and after of that get the ccs libraries and js files.  
-*/
-// to manage the general libraries of css
-ws_lib_css=["bulma.css"]
-    
-
-/*To manage the general libraries of javascript */
-ws_lib_js=["ws-chartjs"] 
-
-
-
-ws_app={
+/* 
+ws_system={
   "ws-type":"ws-system",
 	"ws-info":{
     "ws-method":"ws-onload",
@@ -136,6 +38,7 @@ ws_app={
     }
   }	
 };
+*/
 
 const gateway = `wss://${window.location.host}/ws`;
 let websocket;
@@ -151,17 +54,30 @@ function initWebSocket() {
 }
 
 
+function renderWebSocket(el){
+
+  let ws_el=JSON.parse(el)
+  console.log("Rendering Document WebSocket...")
+  let ht_el=document.getElementById(ws_el.function)
+  console.log(`Modifying ${ws_el.function} element`)
+  ht_el.innerHTML=ws_el.data;
+  console.log(`Including : ${ws_el.data}`)
+
+}
+
 function onOpen(event) {
     let ws_js=document.getElementById('ws-js')
+    const ws_app_json = JSON.stringify(ws_app)
     
 
-    const ws_app_json = JSON.stringify(ws_app)
-    websocket.send(`${ws_app_json}`)
-    //websocket.send(`{"type":"tipo de ws desde ll","data":"ggggdatos de proceso"}`)
-    //websocket.send(ws_app_json)
+    websocket.send(ws_app_json)
     console.log("ws_app sended:", `${ws_app_json}`)
     
     
+
+
+
+
     ws_js.innerHTML=`let state=1;  
     function actualizarNombreArchivo() {
         var input = document.getElementById('archivoInput');
@@ -240,6 +156,8 @@ function onOpen(event) {
       }
         
         console.log("Received new message: "+event.data);
+
+        renderWebSocket(event.data)
     }`
     //let ws_led=document.getElementById('ws-led');
     //ws_led.classList.remove('led-red');
@@ -256,28 +174,6 @@ function onClose(event) {
     console.log('Connection closed');
     setTimeout(initWebSocket, 2000);
 }
-
-/*
-function newMessage(event) {
-    res_ota=document.getElementById('resultado')
-    if (event.data=='77')
-      state=1;
-    else if (event.data=='101'){
-      state=2;
-      res_ota.innerText = "Upload filed!";
-      res_ota.classList.remove('is-success');
-      res_ota.classList.add('is-danger');
-      res_ota.removeAttribute('hidden');
-    } 
-    else if (event.data=='100'){
-      res_ota.innerText = "File Loaded!";
-      res_ota.classList.remove('is-danger');
-      res_ota.classList.add('is-success');
-      res_ota.removeAttribute('hidden');
-    }
-      
-      console.log("Received: "+event.data);
-}*/
 
 function onMessage(event) {
     let state;
@@ -313,16 +209,3 @@ function sendWebsocket() {
     websocket.send('toggle mundo');
 }
 
-/*
-7. ws-system
-The data od ws-system has the next structure:
-
-data={
-  "method":"name",
-  request":request
-}
-
-Where name is a function on the websocket server and
-request let process the function to return the request data
-
-*/
