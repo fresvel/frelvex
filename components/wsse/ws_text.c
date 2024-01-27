@@ -31,7 +31,7 @@ typedef struct {
 
 
 
-static void ws_send_files_init(void *param, char *buffer, u_int8_t state){
+static void ws_send_files_init(void *param, char *buffer, u_int8_t state, int part){
 
         ESP_LOGI(TAG,"Sending files for websocket");
         ws_send_file_t *ws_sf=(ws_send_file_t *)param;
@@ -44,9 +44,10 @@ static void ws_send_files_init(void *param, char *buffer, u_int8_t state){
 
 
         cJSON *root = cJSON_CreateObject();
-        cJSON_AddStringToObject(root, "function", (char*)ws_sf->ws_fn);
+        cJSON_AddStringToObject(root, "function", (char*)ws_sf->ws_fn); //para section se envia con sc-[idsection]
         cJSON_AddStringToObject(root, "data", buffer);
         cJSON_AddNumberToObject(root, "state",state);
+        cJSON_AddNumberToObject(root, "part", part);
 
     // Imprimir el JSON creado
     char *ws_json_str = cJSON_PrintUnformatted(root);

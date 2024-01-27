@@ -40,6 +40,14 @@ ws_system={
 };
 */
 
+doc_header={}
+doc_body={"content":""}
+doc_section={"name":{}}
+doc_footer={}
+doc_system={}
+doc_js={}
+doc_css={}
+
 const gateway = `wss://${window.location.host}/ws`;
 let websocket;
 
@@ -54,12 +62,49 @@ function initWebSocket() {
 }
 
 
+
+function ws_concat_data(el){
+
+  console.log("Contating Document WebSocket...")
+  let ws_el=JSON.parse(el)
+  console.log(ws_el.function)
+  console.log("Before IFF...")
+  if(ws_el.function=="ws-body"){
+    console.log("Inside Document WebSocket...")
+    doc_body[ws_el.part]=ws_el.data
+
+
+    if(ws_el.state==100){
+      for(let i=0;i<=ws_el.part;i++){
+        if(doc_body[i]==='undefined'){
+          console.log("Error de comunicación")
+          break
+        }else{
+          doc_body.content+=doc_body[i]
+          delete doc_body[i]
+        }
+      }
+      console.log(doc_body.content);
+      let html_el=document.getElementById(ws_el.function)
+      html_el.innerHTML=doc_body.content
+    }
+
+
+
+
+    console.log(ws_el.part)
+  }else {
+      console.log("Unknown")
+      console.log(el)
+  }
+  
+
+}
+
 function renderWebSocket(el){
 
-  let ws_el=JSON.parse(el)
   console.log("Rendering Document WebSocket...")
   let ht_el=document.getElementById(ws_el.function)
-  console.log(`Modifying ${ws_el.function} element`)
   ht_el.innerHTML=ws_el.data;
   console.log(`Including : ${ws_el.data}`)
 
@@ -155,9 +200,9 @@ function onOpen(event) {
         res_ota.removeAttribute('hidden');
       }
         
-        console.log("Received new message: "+event.data);
+        //console.log("Received new message: "+event.data);
 
-        renderWebSocket(event.data)
+        ws_concat_data(event.data)
     }`
     //let ws_led=document.getElementById('ws-led');
     //ws_led.classList.remove('led-red');

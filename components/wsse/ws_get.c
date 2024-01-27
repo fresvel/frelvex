@@ -7,7 +7,7 @@
 static const char * TAG="ws_get";
 
 
-static void httpd_send_file(void*param, char *buffer, uint8_t state){
+static void httpd_send_file(void*param, char *buffer, uint8_t state, int part){
     httpd_req_t *req =(httpd_req_t*)param;
     httpd_resp_sendstr_chunk(req,buffer);
     printf("Sending file...\n");

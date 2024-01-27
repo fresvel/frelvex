@@ -9,7 +9,7 @@
 #include "string.h"
 
 
-typedef void (*file_send_t)(void *req, char* buffer, uint8_t state);
+typedef void (*file_send_t)(void *req, char* buffer, uint8_t state, int part);
 
 static const char* TAG="File System";
 void fsys_init(void){
@@ -70,14 +70,14 @@ if(block_size<file_size){
     memset(buffer,0,block_size+1);
     fread(buffer,1,block_size,file);
     //printf("%s",buffer); 
-    file_send(param, buffer,state);
+    file_send(param, buffer,state,i);
     }
 }else{
     char buffer[file_size];
     memset(buffer,0,file_size);
     fread(buffer,1,file_size,file);
     //printf("%s",buffer);
-    file_send(param, buffer,(uint8_t)100);
+    file_send(param, buffer,(uint8_t)100, (int)0);
 
 }
     //file_send(param, NULL);//Indica que finaliza el envío del file
