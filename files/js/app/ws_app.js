@@ -43,7 +43,7 @@ At the end of this request the next data will be overwritten
 - The innerhtml of the ws-css
 */
 
-ws_body=["ws-ota"]
+ws_body=["panel/panel.html"]
 
 /*
 2. ws-section
@@ -116,7 +116,7 @@ ws_styles={
 and after of that get the ccs libraries and js files.  
 */
 // to manage the general libraries of css
-ws_lib_css=["ws-bulma"]
+ws_lib_css=["bulma.css"]
     
 
 /*To manage the general libraries of javascript */

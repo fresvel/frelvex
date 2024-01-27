@@ -64,7 +64,8 @@ if(block_size<file_size){
     for (int i = 0; i <=end ; i++)
     {
     end=(int)(file_size/block_size);
-    uint8_t state=(uint8_t)(1/end)*100;
+    uint8_t state=(uint8_t)((100*i/end));
+    printf("State*** %d *** end%d\n",state,end);
     //printf("Leyendo bloque\n");
     memset(buffer,0,block_size+1);
     fread(buffer,1,block_size,file);

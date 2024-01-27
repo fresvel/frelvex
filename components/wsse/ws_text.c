@@ -9,7 +9,7 @@
 #include <cJSON.h>
 #include <fsys_main.h>
 
-
+#include "esp_heap_caps.h"//DEPURACIÓN
 
 
 
@@ -158,7 +158,9 @@ static void ws_send_files_init(void *param, char *buffer, u_int8_t state){
         send_pkt.len = strlen(ws_json_str);
         send_pkt.type = HTTPD_WS_TYPE_TEXT;
         esp_err_t ret = httpd_ws_send_frame(req, &send_pkt);
-    
+        int mem=heap_caps_get_free_size(MALLOC_CAP_8BIT);
+        printf("Memoria libre: %d\n", mem);
+    free(ws_json_str);
     cJSON_Delete(root);
 }
 
@@ -200,8 +202,11 @@ static esp_err_t ws_getarr_files(const char *json_str, void *ws_arr_name,cJSON *
             ws_file.req=req;
             ws_file.ws_fn=ws_arr_name;
 
-            //sprintf(ws_file.ws_path, "%s/%s",path_json->valuestring,item->valuestring);
-            ws_file.ws_path=path_json->valuestring;
+            size_t path_len=strlen(path_json->valuestring)+strlen(item->valuestring);
+            char str_path[path_len+1]; //revisar longidud
+            sprintf(str_path, "%s/%s",path_json->valuestring,item->valuestring);
+            printf("path: %s\n",str_path);
+            ws_file.ws_path=path_json->valuestring; // revisar si es que se está utilizando
 
 
 
@@ -209,10 +214,10 @@ static esp_err_t ws_getarr_files(const char *json_str, void *ws_arr_name,cJSON *
             arr_str[i] = strdup(item->valuestring);
             printf("ITEM$$$: %s\n",arr_str[i]);
             //ws_send_files(req,path_json->valuestring);
-            fsys_xFuntion_file(ws_file.ws_path,ws_send_files_init,&ws_file);
+            fsys_xFuntion_file(str_path,ws_send_files_init,&ws_file);
             ws_send_files_init(&ws_file,"Datos de función read", 77);
             ws_send_files_fin(&ws_file);
-             
+            //free(str_path);
             //Una vez que finaliza envíar señal de fin
 
             
@@ -302,14 +307,14 @@ static void ws_app_default(char * data_str){}
 
 static void ws_json_config_path(cJSON **json_files_path){
 *json_files_path=cJSON_CreateObject();
-cJSON_AddItemToObject(*json_files_path,"ws-body",cJSON_CreateString("/files/html/body/"));
-cJSON_AddItemToObject(*json_files_path,"ws-header",cJSON_CreateString("/files/html/header/"));
-cJSON_AddItemToObject(*json_files_path,"ws-footer",cJSON_CreateString("/files/html/footer/")); 
-cJSON_AddItemToObject(*json_files_path,"ws-lib-css",cJSON_CreateString("/files/css/lib/"));
-cJSON_AddItemToObject(*json_files_path,"ws-lib-js",cJSON_CreateString("/files/js/lib/"));
-cJSON_AddItemToObject(*json_files_path,"ws-app-js",cJSON_CreateString("/files/js/app/"));
-cJSON_AddItemToObject(*json_files_path,"ws-app-css",cJSON_CreateString("/files/css/app/"));
-cJSON_AddItemToObject(*json_files_path,"ws-system",cJSON_CreateString("/files/system/"));
+cJSON_AddItemToObject(*json_files_path,"ws-body",cJSON_CreateString("/files/html/body"));
+cJSON_AddItemToObject(*json_files_path,"ws-header",cJSON_CreateString("/files/html/header"));
+cJSON_AddItemToObject(*json_files_path,"ws-footer",cJSON_CreateString("/files/html/footer")); 
+cJSON_AddItemToObject(*json_files_path,"ws-lib-css",cJSON_CreateString("/files/css/lib"));
+cJSON_AddItemToObject(*json_files_path,"ws-lib-js",cJSON_CreateString("/files/js/lib"));
+cJSON_AddItemToObject(*json_files_path,"ws-app-js",cJSON_CreateString("/files/js/app"));
+cJSON_AddItemToObject(*json_files_path,"ws-app-css",cJSON_CreateString("/files/css/app"));
+cJSON_AddItemToObject(*json_files_path,"ws-system",cJSON_CreateString("/files/system"));
 }
 
 void ws_app_text(char *ws_app_str, httpd_req_t *req) {
