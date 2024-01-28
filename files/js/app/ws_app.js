@@ -20,8 +20,8 @@ ws_system={}                        // This js object is used to create function
 */
 
 ws_app={
-  "ws-type":"ws-body",
-  "ws-info":["ota/ota.html"]
+  "ws-type":"ws-section",
+  "ws-info":["new_element.html"]
 }
 
 
@@ -40,13 +40,25 @@ ws_system={
 };
 */
 
-doc_header={}
-doc_body={"content":""}
-doc_section={"name":{}}
-doc_footer={}
-doc_system={}
-doc_js={}
-doc_css={}
+doc_render={
+    "ws-header":{"content":""},
+    "ws-body":{"content":""},
+    "ws-section":{},
+    "ws-footer":{"content":""},
+    "ws-system":{"content":""},
+    "ws-js":{"content":""},
+    "ws-css":{"content":""},
+};
+flag_render={
+    "ws-header":-1,
+    "ws-body":-1,
+    "ws-section":-1,
+    "ws-footer":-1,
+    "ws-system":-1,
+    "ws-js":-1,
+    "ws-css":-1
+}
+
 
 const gateway = `wss://${window.location.host}/ws`;
 let websocket;
@@ -65,49 +77,54 @@ function initWebSocket() {
 
 function ws_concat_data(el){
 
-  console.log("Contating Document WebSocket...")
   let ws_el=JSON.parse(el)
-  console.log(ws_el.function)
-  console.log("Before IFF...")
-  if(ws_el.function=="ws-body"){
-    console.log("Inside Document WebSocket...")
-    doc_body[ws_el.part]=ws_el.data
-
-
-    if(ws_el.state==100){
-      for(let i=0;i<=ws_el.part;i++){
-        if(doc_body[i]==='undefined'){
-          console.log("Error de comunicación")
-          break
-        }else{
-          doc_body.content+=doc_body[i]
-          delete doc_body[i]
-        }
-      }
-      console.log(doc_body.content);
-      let html_el=document.getElementById(ws_el.function)
-      html_el.innerHTML=doc_body.content
-    }
-
-
-
-
-    console.log(ws_el.part)
+  if(ws_el.render===undefined){
+    console.log("Function not allowed")
+    console.log(el)
   }else {
-      console.log("Unknown")
-      console.log(el)
+    if(flag_render[ws_el.render]===undefined||flag_render[ws_el.render]===0){
+      doc_render["ws-section"][ws_el.render]={}
+      flag_render[ws_el.render]=1
+      console.log(doc_render);
+      console.log("WS-SECTION CREATED")
+      console.log(doc_render);
+    }
+    
+    if(flag_render[ws_el.render]==1){// Determine if save in direct mode or section mode
+      doc_render["ws-section"][ws_el.render][ws_el.part]=ws_el.data
+      if(ws_el.state==100){
+        renderWebSocket(doc_render["ws-section"][ws_el.render], ws_el.part,ws_el.render)//It is send part cause of that variable stores the real size
+        flag_render[ws_el.render]=0
+      }
+    }else{
+      doc_render[ws_el.render][ws_el.part]=ws_el.data
+      if(ws_el.state==100){
+        renderWebSocket(doc_render[ws_el.render],ws_el.part, ws_el.render)
+      }
+    }
   }
-  
-
 }
 
-function renderWebSocket(el){
-
-  console.log("Rendering Document WebSocket...")
-  let ht_el=document.getElementById(ws_el.function)
-  ht_el.innerHTML=ws_el.data;
-  console.log(`Including : ${ws_el.data}`)
-
+function renderWebSocket(json_el, size, id_el){
+  
+  json_el.content="";
+  
+  for(let i=0;i<=size;i++){
+    if(json_el[i]===undefined){
+      console.log("Error de comunicación")
+      break
+    }else{
+      json_el.content+=json_el[i]
+      delete json_el[i]
+    }
+  }
+  console.log("VALOR DEL JSON")
+  console.log(json_el.content)
+  console.log("VALOR DEL RENDER")
+  console.log(doc_render);
+  let html_el=document.getElementById(id_el)
+  html_el.innerHTML=json_el.content
+  return json_el.content;
 }
 
 function onOpen(event) {

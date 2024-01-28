@@ -40,7 +40,8 @@ static esp_err_t ws_appthml_handler(httpd_req_t *req){
         ESP_LOGI(TAG, "New client connected, OTA HTML");
         httpd_resp_set_type(req, "text/html");
         fsys_xFuntion_file("/files/html/header/head.html",httpd_send_file,req); // envía los archivos
-        fsys_xFuntion_file("files/html/body/body.html",httpd_send_file,req);
+        printf("SENDING BODY\n");
+        fsys_xFuntion_file("/files/html/body/body.html",httpd_send_file,req);
         fsys_xFuntion_file("/files/html/footer/footer.html",httpd_send_file,req);
         httpd_resp_sendstr_chunk(req,NULL);//Finaliza el envío de los archivos
     return ESP_OK;

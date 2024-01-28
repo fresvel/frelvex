@@ -44,7 +44,7 @@ static void ws_send_files_init(void *param, char *buffer, u_int8_t state, int pa
 
 
         cJSON *root = cJSON_CreateObject();
-        cJSON_AddStringToObject(root, "function", (char*)ws_sf->ws_fn); //para section se envia con sc-[idsection]
+        cJSON_AddStringToObject(root, "render", (char*)ws_sf->ws_fn); //para section se envia con sc-[idsection]
         cJSON_AddStringToObject(root, "data", buffer);
         cJSON_AddNumberToObject(root, "state",state);
         cJSON_AddNumberToObject(root, "part", part);
@@ -106,6 +106,7 @@ cJSON_AddItemToObject(*json_files_path,"ws-footer",cJSON_CreateString("/files/ht
 cJSON_AddItemToObject(*json_files_path,"ws-css",cJSON_CreateString("/files/css/lib"));
 cJSON_AddItemToObject(*json_files_path,"ws-js",cJSON_CreateString("/files/js/lib"));
 cJSON_AddItemToObject(*json_files_path,"ws-system",cJSON_CreateString("/files/system"));
+cJSON_AddItemToObject(*json_files_path,"ws-section",cJSON_CreateString("/files/section"));
 }
 
 void ws_app_text(char *ws_app_str, httpd_req_t *req) {
