@@ -26,7 +26,9 @@ typedef struct {
 
 typedef struct {
     httpd_req_t *req;
-    char *ws_fn;
+    char *method;
+    char *name;
+    char *module;
 }ws_send_file_t;
 
 
@@ -36,18 +38,21 @@ static void ws_send_files_init(void *param, char *buffer, u_int8_t state, int pa
         ESP_LOGI(TAG,"Sending files for websocket");
         ws_send_file_t *ws_sf=(ws_send_file_t *)param;
         httpd_req_t *req=(httpd_req_t*)ws_sf->req;
-        char* ws_fn=(char*)ws_sf->ws_fn;
+        char* method=(char*)ws_sf->method;
+        char* file_name=(char*)ws_sf->name;
+        char* module=(char*)ws_sf->module;
 
         printf("\033[0;35m");
-        printf("Valor de ws_fn: %s\n",ws_fn);
+        printf("Valor de method: %s\n",method);
 
 
 
         cJSON *root = cJSON_CreateObject();
-        cJSON_AddStringToObject(root, "render", (char*)ws_sf->ws_fn); //para section se envia con sc-[idsection]
-        cJSON_AddStringToObject(root, "data", buffer);
+        cJSON_AddStringToObject(root, method, module); //module es ws-type
         cJSON_AddNumberToObject(root, "state",state);
         cJSON_AddNumberToObject(root, "part", part);
+        cJSON_AddStringToObject(root, "name", file_name);
+        cJSON_AddStringToObject(root, "data", buffer);
 
     // Imprimir el JSON creado
     char *ws_json_str = cJSON_PrintUnformatted(root);
@@ -138,6 +143,11 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
     
     cJSON *ws_info=cJSON_GetObjectItem(ws_obj_req,"ws-info");
 
+    ws_send_file_t ws_file;
+    ws_file.req=req;
+    ws_file.module=ws_strtype;
+    char* base_path=cJSON_GetObjectItem(json_files_path,ws_strtype)->valuestring;
+
     if (cJSON_IsArray(ws_info))
     {
         ESP_LOGI(TAG, "The ws-info element is an Array, requesting files\n");
@@ -147,19 +157,14 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
             cJSON *item = cJSON_GetArrayItem(ws_info,i);
             if (cJSON_IsString(item))
             {
-                ws_send_file_t ws_file;
-                ws_file.req=req;
-                ws_file.ws_fn=ws_strtype;
-                char* base_path=cJSON_GetObjectItem(json_files_path,ws_strtype)->valuestring;
-                char ws_path[strlen(ws_strtype)+strlen(base_path)+1];
+                ws_file.name=item->valuestring;
+                ws_file.method="render";
+                char ws_path[strlen(item->valuestring)+strlen(base_path)+1]; //POSIBLE REPORT
                 sprintf(ws_path,"%s/%s",base_path,item->valuestring);
                 printf("Path value to get file %s\n",ws_path); 
-
                 fsys_xFuntion_file(ws_path,ws_send_files_init,&ws_file);
                 //free(str_path);
-                //Una vez que finaliza envíar señal de fin
-
-                
+                //Una vez que finaliza envíar señal de fin      
             }else{
                 ESP_LOGE(TAG,"The element is not a string in the position: %d\n", i);
                 printf("COntrol");
@@ -167,13 +172,54 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
                 return ;
             }
 
-
-
         }
 
     }else if (cJSON_IsObject(ws_info))
     {
         ESP_LOGI(TAG, "The ws-info element is an Objetc\n");
+        
+        int arr_size=cJSON_GetArraySize(ws_info);
+        printf("Array size: %d\n",arr_size);
+        for (size_t i = 0; i < arr_size; i++)
+        {
+            cJSON *item = cJSON_GetArrayItem(ws_info,i);
+            if (cJSON_IsString(item))
+            {
+                ws_file.name=item->valuestring;
+                ws_file.method="render";
+                ws_file.module=item->string;
+                char ws_path[strlen(item->valuestring)+strlen(base_path)+1]; //POSIBLE REPORT
+                sprintf(ws_path,"%s/%s",base_path,item->valuestring);
+                printf("Path value to get file %s\n",ws_path); 
+                fsys_xFuntion_file(ws_path,ws_send_files_init,&ws_file);
+                //free(str_path);
+                //Una vez que finaliza envíar señal de fin      
+            }else{
+                ESP_LOGE(TAG,"The element is not a string in the position: %d\n", i);
+                printf("COntrol");
+                cJSON_Delete(item);
+                return ;
+            }
+        }
+        
+
+
+    
+
+
+    
+    
+    }else if (cJSON_IsString(ws_info)){
+        ESP_LOGI(TAG, "The ws-info element is an String\n");
+        
+        ws_file.name=ws_info->valuestring;
+        ws_file.method="render";
+        char ws_path[strlen(ws_info->valuestring)+strlen(base_path)+1];
+        sprintf(ws_path,"%s/%s",base_path,ws_info->valuestring);
+        printf("Path value to get file %s\n",ws_path); 
+        fsys_xFuntion_file(ws_path,ws_send_files_init,&ws_file);
+    
+    
     }else{
         ESP_LOGI(TAG, "The ws-info element must be an array or object type");
         return;

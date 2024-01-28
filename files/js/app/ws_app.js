@@ -4,7 +4,7 @@ ws_body=["panel/panel.html"]        // Type of ws request that manages the body.
 ws_lib_css=["bulma.css"]            // Type of ws request that manages the ccs components. Points to files/ccs
 ws_lib_js=["ws-chartjs"]            // Type of ws request that manages the javascript components. Points to files/js
 ws_footer=["panel/panel.html"]      // Type of ws request that manages the footer. Points to files/html/footer
-ws_section=[]                       // Type of ws request that manages a section of body. Points to files/html/section
+ws_section={}                       // Type of ws request that manages a section of body. Points to files/section
 ws_system={}                        // This js object is used to create functions 
 /** At the first load the browser get the basic elements which includes 
  * header, basic body, footer, ccs styles default and this javascript.
@@ -19,9 +19,22 @@ ws_system={}                        // This js object is used to create function
  * in files directory.     
 */
 
+/**FOR GENERAL REQUESTS ws-info ARRAY BASE 
+ * ws_app={
+  "ws-type":"ws-body",
+  "ws-info":["ota/ota.html"]
+}
+ */
+
+ws_section={
+  "sc-new":"main.html",
+  "sc-led":"sc-led.html",
+  "sc-btn":"sc-btn.html"
+}
+
 ws_app={
-  "ws-type":"ws-section",
-  "ws-info":["new_element.html"]
+  "ws-type":"ws-section", 
+  "ws-info":ws_section
 }
 
 
