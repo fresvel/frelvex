@@ -1,9 +1,9 @@
 /*Each of the next elements are arrays wich contains the base paths to the requested files */
-ws_header=["ws-navbar","ws-led"]    // Type of ws request that manages the header. Points to files/html/header
-ws_body=["panel/panel.html"]        // Type of ws request that manages the body. Points to files/html/body
-ws_lib_css=["bulma.css"]            // Type of ws request that manages the ccs components. Points to files/ccs
-ws_lib_js=["ws-chartjs"]            // Type of ws request that manages the javascript components. Points to files/js
-ws_footer=["panel/panel.html"]      // Type of ws request that manages the footer. Points to files/html/footer
+ws_header={}    // Type of ws request that manages the header. Points to files/html/header
+ws_body={}        // Type of ws request that manages the body. Points to files/html/body
+ws_lib_css={}            // Type of ws request that manages the ccs components. Points to files/ccs
+ws_lib_js={}            // Type of ws request that manages the javascript components. Points to files/js
+ws_footer={}      // Type of ws request that manages the footer. Points to files/html/footer
 ws_section={}                       // Type of ws request that manages a section of body. Points to files/section
 ws_system={}                        // This js object is used to create functions 
 /** At the first load the browser get the basic elements which includes 
@@ -19,22 +19,34 @@ ws_system={}                        // This js object is used to create function
  * in files directory.     
 */
 
-/**FOR GENERAL REQUESTS ws-info ARRAY BASE 
+/**TESTED ELEMENTS 
  * ws_app={
   "ws-type":"ws-body",
   "ws-info":["ota/ota.html"]
-}
- */
-
-ws_section={
-  "sc-new":"main.html",
-  "sc-led":"sc-led.html",
-  "sc-btn":"sc-btn.html"
 }
 
 ws_app={
   "ws-type":"ws-section", 
   "ws-info":ws_section
+}
+*/
+
+ws_section={
+  "ws-body":"main.html",
+  "sc-led" :"sc-led.html",
+  "sc-btn" :"sc-btn.html"
+}
+
+ws_script={
+  "ws-js":"public/main.html",
+  "js-led":"public/js-led.js",
+  "js-new":"public/js-new.js"
+}
+
+ws_app={
+  "ws-type":"ws-js", 
+  "ws-info":ws_script,
+  "ws-tokn":{}
 }
 
 
@@ -141,7 +153,7 @@ function renderWebSocket(json_el, size, id_el){
 }
 
 function onOpen(event) {
-    let ws_js=document.getElementById('ws-js')
+    let ws_js=document.getElementById('js-test')
     const ws_app_json = JSON.stringify(ws_app)
     
 
@@ -153,87 +165,7 @@ function onOpen(event) {
 
 
 
-    ws_js.innerHTML=`let state=1;  
-    function actualizarNombreArchivo() {
-        var input = document.getElementById('archivoInput');
-        var nombreArchivoSpan = document.getElementById('nombreArchivo');
-        if (input.files.length > 0) {
-            nombreArchivoSpan.textContent = input.files[0].name;
-        } else {
-            nombreArchivoSpan.textContent = 'Choose a file';
-        }
-    }
-
-    function sendFile(){
-      let input=document.getElementById("archivoInput");
-      let file=input.files[0];
-      let bar=document.getElementById("prbar")
-
-      
-      if (file){
-        const chunk_size = 1024;
-        let offset=0;
-        websocket.send('a');
-
-        function sendChunk(){
-          if(state==1){
-            const chunk=file.slice(offset,offset + chunk_size)
-            websocket.send(chunk)
-            offset += chunk_size
-            if (offset < file.size){
-              setTimeout(sendChunk,3)
-              console.log("sending file chunk")
-            }else{
-              console.log("File send finished")
-              websocket.send('b');
-            }
-
-
-            let prog=Math.round(offset/file.size*100);
-            prog = Math.min(prog, 100);
-            bar.value=prog;
-            bar.innerHTML=prog+"%"
-            state=0;
-          }else if(state==2){
-            console.log("Error en la carga del fichero")
-          }else{
-            console.log("Waiting for response...")
-            setTimeout(sendChunk,4)
-          }
-        }
-        sendChunk();
-      }else{
-        alert("First select a file!");
-      }
-    }
-
-    function ws_send_pkt(value){
-      console.log("Sending packet...");
-      websocket.send(value);
-    }
-
-    onMessage=function (event) {
-      res_ota=document.getElementById('resultado')
-      if (event.data=='77')
-        state=1;
-      else if (event.data=='101'){
-        state=2;
-        res_ota.innerText = "Upload filed!";
-        res_ota.classList.remove('is-success');
-        res_ota.classList.add('is-danger');
-        res_ota.removeAttribute('hidden');
-      } 
-      else if (event.data=='100'){
-        res_ota.innerText = "File Loaded!";
-        res_ota.classList.remove('is-danger');
-        res_ota.classList.add('is-success');
-        res_ota.removeAttribute('hidden');
-      }
-        
-        //console.log("Received new message: "+event.data);
-
-        ws_concat_data(event.data)
-    }`
+    ws_js.innerHTML=``
     //let ws_led=document.getElementById('ws-led');
     //ws_led.classList.remove('led-red');
     //ws_led.classList.add('led-green');

@@ -40,7 +40,7 @@ static esp_err_t ws_appthml_handler(httpd_req_t *req){
         ESP_LOGI(TAG, "New client connected, OTA HTML");
         httpd_resp_set_type(req, "text/html");
         fsys_xFuntion_file("/files/html/header/head.html",httpd_send_file,req); // envía los archivos
-        printf("SENDING BODY\n");
+        fsys_xFuntion_file("/files/html/header/empty.html",httpd_send_file,req);
         fsys_xFuntion_file("/files/html/body/body.html",httpd_send_file,req);
         fsys_xFuntion_file("/files/html/footer/footer.html",httpd_send_file,req);
         httpd_resp_sendstr_chunk(req,NULL);//Finaliza el envío de los archivos
@@ -60,7 +60,7 @@ static esp_err_t ws_appjs_handler(httpd_req_t *req){
         ESP_LOGI(TAG, "New client connected appjs");
         
         httpd_resp_set_type(req, "text/javascript");
-        fsys_xFuntion_file("/files/js/app/ws_app.js",httpd_send_file,req);
+        fsys_xFuntion_file("/files/js/ws_main.js",httpd_send_file,req);
         httpd_resp_sendstr_chunk(req,NULL);
         
     }
@@ -70,7 +70,7 @@ static esp_err_t ws_appjs_handler(httpd_req_t *req){
 
 
  const httpd_uri_t ws_appjs_uri={
-    .uri = "/ws_app.js",
+    .uri = "/ws_main.js",
     .method = HTTP_GET,
     .handler = ws_appjs_handler,
     .user_ctx = NULL

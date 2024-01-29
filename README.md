@@ -1,9 +1,22 @@
 | Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C6 | ESP32-H2 | ESP32-S2 | ESP32-S3 |
 | ----------------- | ----- | -------- | -------- | -------- | -------- | -------- | -------- |
 
-# _Web Firmware for ESP32_
+# _Websocket-based Firmware for ESP32_
 
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+
+The websocket based Firmware for ESP32 is a system that provides a web interface for managing applications and services over the ESP32 modules.
+
+This system works with ESP-IDF framework and its funtionality is based on a communication of requests and responses using websockets. The browser uses a JSON object to send the request to a websocket server wich is functioning in a ESP32 microcontroller, at the same time the server will respond with a JSON object. The communication between client and server has been implemented with the following types of structures:
+
+1. Request Objects.- The request objects structure contains two elements "ws-type" and "ws-info". The first element contains the
+
+ws_app={
+    "ws-type": "string",
+    "ws-info": info_object,
+}
+
+2. Response Objects
+
 
 
 To configure the project, you have to set the following configurations inside menuconfig:
@@ -53,10 +66,7 @@ This directory will contain the files for magage the web applications wia websoc
 7. Websocket
 On the websocket server requests will be processed in two ways: as a data request or as a file request. All requests arrive to ws_hadler and then if it has the correct schema for a ws_app request, them are directionated to six diferent functions. For manage the ws_app requests a json object is used, and its structure is described below:
 
-ws_app={
-    "ws-type": "",
-    "ws-info": {}
-}
+
 
 
 Where ws-type is a string that contains the name of one of the six diferents functions that are managed on the websocket server. On another hand ws-info is an object wich contains the information for the final request. The different types are as follows:

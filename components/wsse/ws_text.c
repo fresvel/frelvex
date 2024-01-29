@@ -103,13 +103,13 @@ static esp_err_t ws_app_system(char * data_str, httpd_req_t *req, cJSON **json_f
 static void ws_app_default(char * data_str){}
 
 
-static void ws_json_config_path(cJSON **json_files_path){
+static void ws_json_config_path(cJSON **json_files_path){ //Desde system se puede crear una función para crear nuevos directorios virtuales
 *json_files_path=cJSON_CreateObject();
 cJSON_AddItemToObject(*json_files_path,"ws-body",cJSON_CreateString("/files/html/body"));
 cJSON_AddItemToObject(*json_files_path,"ws-header",cJSON_CreateString("/files/html/header"));
 cJSON_AddItemToObject(*json_files_path,"ws-footer",cJSON_CreateString("/files/html/footer")); 
-cJSON_AddItemToObject(*json_files_path,"ws-css",cJSON_CreateString("/files/css/lib"));
-cJSON_AddItemToObject(*json_files_path,"ws-js",cJSON_CreateString("/files/js/lib"));
+cJSON_AddItemToObject(*json_files_path,"ws-css",cJSON_CreateString("/files/css"));
+cJSON_AddItemToObject(*json_files_path,"ws-js",cJSON_CreateString("/files/js"));
 cJSON_AddItemToObject(*json_files_path,"ws-system",cJSON_CreateString("/files/system"));
 cJSON_AddItemToObject(*json_files_path,"ws-section",cJSON_CreateString("/files/section"));
 }
@@ -147,7 +147,7 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
     ws_file.req=req;
     ws_file.module=ws_strtype;
     char* base_path=cJSON_GetObjectItem(json_files_path,ws_strtype)->valuestring;
-
+/*ARRAY REQUEST BASE*/
     if (cJSON_IsArray(ws_info))
     {
         ESP_LOGI(TAG, "The ws-info element is an Array, requesting files\n");
@@ -173,10 +173,25 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
             }
 
         }
-
+/*OBJETC REQUEST BASE*/
     }else if (cJSON_IsObject(ws_info))
     {
         ESP_LOGI(TAG, "The ws-info element is an Objetc\n");
+
+
+
+        if (strcmp("ws-js",ws_type->valuestring) == 0)
+        {
+            ESP_LOGI(TAG, "Setting method for: %s\n",ws_type->valuestring);
+            ws_file.method="render";
+        }else{
+            ESP_LOGI(TAG, "Setting alternative method for: %s\n",ws_type->valuestring);
+            ws_file.method="render";
+        }
+            
+
+        
+      
         
         int arr_size=cJSON_GetArraySize(ws_info);
         printf("Array size: %d\n",arr_size);
@@ -186,7 +201,6 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
             if (cJSON_IsString(item))
             {
                 ws_file.name=item->valuestring;
-                ws_file.method="render";
                 ws_file.module=item->string;
                 char ws_path[strlen(item->valuestring)+strlen(base_path)+1]; //POSIBLE REPORT
                 sprintf(ws_path,"%s/%s",base_path,item->valuestring);
@@ -206,9 +220,7 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
 
     
 
-
-    
-    
+/*STRING REQUEST BASE*/    
     }else if (cJSON_IsString(ws_info)){
         ESP_LOGI(TAG, "The ws-info element is an String\n");
         
@@ -219,7 +231,7 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
         printf("Path value to get file %s\n",ws_path); 
         fsys_xFuntion_file(ws_path,ws_send_files_init,&ws_file);
     
-    
+/*NOT IMPLEMENTED*/    
     }else{
         ESP_LOGI(TAG, "The ws-info element must be an array or object type");
         return;
