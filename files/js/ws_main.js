@@ -1,5 +1,5 @@
-ws_header={}    
-ws_body={}      
+ws_header={} //Only object    
+ws_body={}   //{}[]""   
 ws_lib_css={}  
 ws_lib_js={}   
 ws_footer={}    
@@ -47,49 +47,56 @@ function initWebSocket() {
     websocket = new WebSocket(gateway)
     websocket.onopen = onOpen
     websocket.onclose = onClose
-    websocket.onmessage = onMessage
+    websocket.onmessage = mainMessage
     websocket.onerror = onError
 }
 
-function ws_join_file(el){
-  let ws_el=JSON.parse(el)
-  if(ws_el.render===undefined){
-    console.log("Function not allowed")
-  }else {
-    if(doc_state[ws_el.render]===undefined||doc_state[ws_el.render]===0){
-      doc_render["ws-section"][ws_el.render]={}
-      doc_state[ws_el.render]=1
-    }
-    if(doc_state[ws_el.render]==1){// Determines if save in doc_render or in ws-section mode
-      doc_render["ws-section"][ws_el.render][ws_el.part]=ws_el.data
-      if(ws_el.state==100){
-        renderWebSocket(doc_render["ws-section"][ws_el.render], ws_el.part,ws_el.render)//It is send part cause of that variable stores the real size
-        doc_state[ws_el.render]=0
-      }
-    }else{
-      doc_render[ws_el.render][ws_el.part]=ws_el.data
-      if(ws_el.state==100){
-        renderWebSocket(doc_render[ws_el.render],ws_el.part, ws_el.render)
-      }
-    }
-  }
-}
 
-function renderWebSocket(json_el, size, id_el){
-  json_el.content="";//Adds a function to check doc state 
-  for(let i=0;i<=size;i++){
-    if(json_el[i]===undefined){
+function ws_renderPage(ren_obj,ws_obj) {
+  ren_obj.content="" //Crear función para validar si es necesario o permitido borrar o modificar lo existente
+  console.log(ws_obj)
+  for(let i=0;i<=ws_obj.load.tally;i++){
+    if(ren_obj[i]===undefined){
       console.log("Error de comunicación")
       break
     }else{
-      json_el.content+=json_el[i]
-      delete json_el[i]
+      ren_obj.content+=ren_obj[i]
+      delete ren_obj[i]
     }
   }
+
+  console.log("VALOR DE MODULE")
+  console.log(ws_obj.src.module)
+  if(ws_obj.src.object===""){
+    ws_obj.src.object=ws_obj.src.module
+    console.log("VALOR TRUE")
+    console.log(ws_obj.src.object)  
+  }else{
+    console.log("VALOR TRUE")
+    console.log(ws_obj.src.object)
+  }
+  
+
   console.log("File received")
-  console.log(doc_render);
-  let html_el=document.getElementById(id_el)
-  html_el.innerHTML=json_el.content
+  console.log(doc_render)
+  console.log(ws_obj)
+  let html_el=document.getElementById(ws_obj.src.object)
+  console.log(ws_obj.src.object)
+  html_el.innerHTML=ren_obj.content
+}
+
+function ws_renderFile(ws_obj){
+
+  if(ws_obj.src.object===""){
+    doc_render[ws_obj.src.module][ws_obj.load.tally]=ws_obj.data
+    if(ws_obj.load.state==100)
+      ws_renderPage(doc_render[ws_obj.src.module],ws_obj)
+  }else{
+    if(doc_render[ws_obj.src.module][ws_obj.src.object]===undefined)
+    doc_render[ws_obj.src.module][ws_obj.src.object]={}
+    doc_render[ws_obj.src.module][ws_obj.src.object][ws_obj.load.tally]=ws_obj.data
+    ws_renderPage(doc_render[ws_obj.src.module][ws_obj.src.object],ws_obj)
+  }
 }
 
 function onOpen(event) {
@@ -97,9 +104,9 @@ function onOpen(event) {
     websocket.send(json_app)
     console.log("Sending request:", `${json_app}`)
     let ws_led=document.getElementById('ws-led');
-    console.log(ws_led)
+    //console.log(ws_led)
     if (ws_led!=null) {
-      console.log(ws_led)
+      //console.log(ws_led)
       ws_led.classList.remove('led-red');
       ws_led.classList.add('led-green');
       blinkLED(ws_led);
@@ -111,12 +118,28 @@ function onClose(event) {
     setTimeout(initWebSocket, 2000);
 }
 
-function onMessage(event) {
-    let state;
-    
-    ws_join_file(event.data)
+function onMessage(ws_msg){
 
+}
+
+function mainMessage(event) {
     console.log(`On message: ${event.data}\n`);
+    let ws_msg=JSON.parse(event.data);
+
+    if (ws_msg===null) {
+      console.log("NOT IMPLEMENTED");
+    }else if(ws_msg.method ==="render"){
+      ws_renderFile(ws_msg)
+    }else if(ws_msg.method ==="system"){
+      console.log("SYSTEM");
+    }else if(ws_msg.method ==="header"){
+      ws_configHeader(ws_msg)
+    }else{
+      console.log("NOT IMPLEMENTED");
+    }
+
+    onMessage(ws_msg)
+
 } /*REVISAR LA FORMA DE SOBREESCRIBIR*/ 
 
 function onError(event) {
@@ -184,3 +207,29 @@ function ws_add_script(js_name){
   console.log(json_req)
 }
 
+
+
+/**
+ * Manage the header in a diferent method in wich the user can decide 
+ * wich elements of header is active and using a plain or o type of object
+ * configures the elements of the header like names of the menu items and navbar
+ */
+
+function ws_configHeader(ws_obj){
+
+  ws_header={
+    "ws-ota":"ota/ota.json" 
+  }
+  
+  ws_req={
+    "ws-type":"ws-header",
+    "ws-info":ws_header
+  }
+
+}
+
+
+
+function ws_renderHeader(ws_obj){
+  //render the header in function of the object received from the server   
+}

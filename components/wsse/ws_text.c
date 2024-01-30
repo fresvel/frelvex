@@ -27,32 +27,44 @@ typedef struct {
 typedef struct {
     httpd_req_t *req;
     char *method;
-    char *name;
+    char *fname;
     char *module;
+    char *object;
 }ws_send_file_t;
 
 
 
-static void ws_send_files_init(void *param, char *buffer, u_int8_t state, int part){
+static void ws_send_files_init(void *param, char *buffer, u_int8_t state, int tally){
 
         ESP_LOGI(TAG,"Sending files for websocket");
-        ws_send_file_t *ws_sf=(ws_send_file_t *)param;
-        httpd_req_t *req=(httpd_req_t*)ws_sf->req;
-        char* method=(char*)ws_sf->method;
-        char* file_name=(char*)ws_sf->name;
-        char* module=(char*)ws_sf->module;
+        ws_send_file_t *ws_file=(ws_send_file_t *)param;
+        httpd_req_t *req=(httpd_req_t*)ws_file->req;
+        char* method=(char*)ws_file->method;
+        char* fname=(char*)ws_file->fname;
+        char* module=(char*)ws_file->module;
+        char* object=(char*)ws_file->object;
 
         printf("\033[0;35m");
         printf("Valor de method: %s\n",method);
 
 
+        cJSON *load=cJSON_CreateObject();
+        cJSON_AddNumberToObject(load, "state",state);
+        cJSON_AddNumberToObject(load, "tally", tally);
+
+        cJSON *src=cJSON_CreateObject();
+        cJSON_AddStringToObject(src, "module",module);
+        cJSON_AddStringToObject(src, "file",fname); //validate if really it is necessary, maybe it is only needed object
+        cJSON_AddStringToObject(src, "object",object);
+
 
         cJSON *root = cJSON_CreateObject();
-        cJSON_AddStringToObject(root, method, module); //module es ws-type
-        cJSON_AddNumberToObject(root, "state",state);
-        cJSON_AddNumberToObject(root, "part", part);
-        cJSON_AddStringToObject(root, "name", file_name);
+        cJSON_AddStringToObject(root, "method",method); //module es ws-type
+        cJSON_AddItemToObject(root, "load",load);
+        cJSON_AddItemToObject(root, "src",src);
+        
         cJSON_AddStringToObject(root, "data", buffer);
+
 
     // Imprimir el JSON creado
     char *ws_json_str = cJSON_PrintUnformatted(root);
@@ -146,19 +158,21 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
     ws_send_file_t ws_file;
     ws_file.req=req;
     ws_file.module=ws_strtype;
+    ws_file.object="";
+
     char* base_path=cJSON_GetObjectItem(json_files_path,ws_strtype)->valuestring;
 /*ARRAY REQUEST BASE*/
     if (cJSON_IsArray(ws_info))
     {
         ESP_LOGI(TAG, "The ws-info element is an Array, requesting files\n");
         int arr_size=cJSON_GetArraySize(ws_info);
+        ws_file.method="render";
         for (size_t i = 0; i < arr_size; i++)
         {
             cJSON *item = cJSON_GetArrayItem(ws_info,i);
             if (cJSON_IsString(item))
             {
-                ws_file.name=item->valuestring;
-                ws_file.method="render";
+                ws_file.fname=item->valuestring;
                 char ws_path[strlen(item->valuestring)+strlen(base_path)+1]; //POSIBLE REPORT
                 sprintf(ws_path,"%s/%s",base_path,item->valuestring);
                 printf("Path value to get file %s\n",ws_path); 
@@ -180,10 +194,10 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
 
 
 
-        if (strcmp("ws-js",ws_type->valuestring) == 0)
+        if (strcmp("ws-header",ws_type->valuestring) == 0)
         {
             ESP_LOGI(TAG, "Setting method for: %s\n",ws_type->valuestring);
-            ws_file.method="render";
+            ws_file.method="header";
         }else{
             ESP_LOGI(TAG, "Setting alternative method for: %s\n",ws_type->valuestring);
             ws_file.method="render";
@@ -200,8 +214,8 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
             cJSON *item = cJSON_GetArrayItem(ws_info,i);
             if (cJSON_IsString(item))
             {
-                ws_file.name=item->valuestring;
-                ws_file.module=item->string;
+                ws_file.fname=item->valuestring;
+                ws_file.object=item->string;
                 char ws_path[strlen(item->valuestring)+strlen(base_path)+1]; //POSIBLE REPORT
                 sprintf(ws_path,"%s/%s",base_path,item->valuestring);
                 printf("Path value to get file %s\n",ws_path); 
@@ -224,7 +238,7 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
     }else if (cJSON_IsString(ws_info)){
         ESP_LOGI(TAG, "The ws-info element is an String\n");
         
-        ws_file.name=ws_info->valuestring;
+        ws_file.fname=ws_info->valuestring;
         ws_file.method="render";
         char ws_path[strlen(ws_info->valuestring)+strlen(base_path)+1];
         sprintf(ws_path,"%s/%s",base_path,ws_info->valuestring);

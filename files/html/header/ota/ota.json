@@ -1,0 +1,7 @@
+{
+    "menu":["Sensors","Protocols","Network","Dashboard","System"],
+    "title":"OTA System",
+    "class":"",
+    "logo":0,
+    "led":1
+}
