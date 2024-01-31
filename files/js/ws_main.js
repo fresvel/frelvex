@@ -1,17 +1,4 @@
-ws_header={} //Only object    
-ws_body={}   //{}[]""   
-ws_lib_css={}  
-ws_lib_js={}   
-ws_footer={}    
-ws_system={}    
-
-ws_app={
-  "ws-type":"ws-body", 
-  "ws-info":"login/login.html",
-  "ws-token":{}//return an auth method and data for login page(not implemented yet)
-}
-
-doc_render={
+const doc_render={
     "ws-header":{"content":""},
     "ws-body":{"content":""},
     "ws-section":{},
@@ -28,7 +15,7 @@ doc_render={
  *  1   loading file
  *  2   static element, this will not be reload and is saved in the browser
  */
-doc_state={ 
+const doc_state={ 
     "ws-header":-1,
     "ws-body":-1,
     "ws-section":-1,
@@ -54,7 +41,6 @@ function initWebSocket() {
 
 function ws_renderPage(ren_obj,ws_obj) {
   ren_obj.content="" //Crear función para validar si es necesario o permitido borrar o modificar lo existente
-  console.log(ws_obj)
   for(let i=0;i<=ws_obj.load.tally;i++){
     if(ren_obj[i]===undefined){
       console.log("Error de comunicación")
@@ -65,24 +51,18 @@ function ws_renderPage(ren_obj,ws_obj) {
     }
   }
 
-  console.log("VALOR DE MODULE")
-  console.log(ws_obj.src.module)
+
   if(ws_obj.src.object===""){
-    ws_obj.src.object=ws_obj.src.module
-    console.log("VALOR TRUE")
-    console.log(ws_obj.src.object)  
+    ws_obj.src.object=ws_obj.src.module  
   }else{
     console.log("VALOR TRUE")
     console.log(ws_obj.src.object)
   }
   
-
-  console.log("File received")
-  console.log(doc_render)
-  console.log(ws_obj)
   let html_el=document.getElementById(ws_obj.src.object)
   console.log(ws_obj.src.object)
   html_el.innerHTML=ren_obj.content
+  console.log(doc_render)
 }
 
 function ws_renderFile(ws_obj){
@@ -93,13 +73,20 @@ function ws_renderFile(ws_obj){
       ws_renderPage(doc_render[ws_obj.src.module],ws_obj)
   }else{
     if(doc_render[ws_obj.src.module][ws_obj.src.object]===undefined)
-    doc_render[ws_obj.src.module][ws_obj.src.object]={}
+      doc_render[ws_obj.src.module][ws_obj.src.object]={}
     doc_render[ws_obj.src.module][ws_obj.src.object][ws_obj.load.tally]=ws_obj.data
-    ws_renderPage(doc_render[ws_obj.src.module][ws_obj.src.object],ws_obj)
+    if(ws_obj.load.state==100)
+      ws_renderPage(doc_render[ws_obj.src.module][ws_obj.src.object],ws_obj)
   }
 }
 
 function onOpen(event) {
+    let ws_app={
+      "ws-type":"ws-body", 
+      "ws-info":"login/login.html",
+      "ws-token":{}
+    }
+
     const json_app = JSON.stringify(ws_app)
     websocket.send(json_app)
     console.log("Sending request:", `${json_app}`)
@@ -123,9 +110,7 @@ function onMessage(ws_msg){
 }
 
 function mainMessage(event) {
-    console.log(`On message: ${event.data}\n`);
     let ws_msg=JSON.parse(event.data);
-
     if (ws_msg===null) {
       console.log("NOT IMPLEMENTED");
     }else if(ws_msg.method ==="render"){
@@ -133,7 +118,7 @@ function mainMessage(event) {
     }else if(ws_msg.method ==="system"){
       console.log("SYSTEM");
     }else if(ws_msg.method ==="header"){
-      ws_configHeader(ws_msg)
+      ws_renderHeader(ws_msg.data)
     }else{
       console.log("NOT IMPLEMENTED");
     }
@@ -168,8 +153,10 @@ function blinkLED(button) {
 */
 
 function login_Btn(js_name){
+
+  ws_configHeader()
   //here request de ccs elements
-  ws_req={
+  let ws_req={
     "ws-type":"ws-body",
     "ws-info":"ota/ota.html",
     "ws-token":{}
@@ -177,8 +164,8 @@ function login_Btn(js_name){
   const json_req = JSON.stringify(ws_req)
   websocket.send(json_req)
   console.log("Body requested");
+  
   ws_add_script(js_name)
-
 }
 
 function ws_add_script(js_name){
@@ -190,11 +177,11 @@ function ws_add_script(js_name){
   js.id="ws-djs"
   document.body.appendChild(js)
 
-  ws_script={
+  let ws_script={
     "ws-sjs":"ota/test.js",
     "ws-djs":"ota/ota.js"
   }
-  ws_req={
+  let ws_req={
     "ws-type":"ws-js",
     "ws-info":ws_script,
     "ws-token":{}
@@ -204,7 +191,6 @@ function ws_add_script(js_name){
   websocket.send(json_req)
   let ws_led=document.getElementById('ws-led');
   blinkLED(ws_led) 
-  console.log(json_req)
 }
 
 
@@ -215,21 +201,53 @@ function ws_add_script(js_name){
  * configures the elements of the header like names of the menu items and navbar
  */
 
-function ws_configHeader(ws_obj){
 
-  ws_header={
-    "ws-ota":"ota/ota.json" 
+function ws_configHeader(){
+
+  let ws_header={
+    "ws-ota":"ota/ota.json"
   }
   
-  ws_req={
+  let ws_req={
     "ws-type":"ws-header",
     "ws-info":ws_header
   }
 
+  let req_str=JSON.stringify(ws_req)
+  websocket.send(req_str)
+  console.log("Solicitud enviada")
+  console.log(req_str)
 }
 
 
+function ws_renderHeader(hd_str){
+  
+  hd_obj=JSON.parse(hd_str)
+  let title=document.getElementById("ws-title");
+  title.innerHTML=hd_obj.title
+  let menu = document.getElementById("hd-menu"); // Asumo que el menú tiene un ID "ws-menu"
+  menu.innerHTML=""
+  hd_obj.menu.forEach(el => {
+    let item = document.createElement("a");
+    item.className = "navbar-item is-size-5";
+    item.id = `menu-${el}`;
+    item.textContent = el;
+    menu.appendChild(item);
+  });
+  let hd_brand=document.getElementById("hd-brand")
+  hd_brand.className=""
+  let brand_sty="button m-3 "+hd_obj.class
+  hd_brand.className=brand_sty
 
-function ws_renderHeader(ws_obj){
-  //render the header in function of the object received from the server   
+  let hd_nav=document.getElementById("hd-nav")
+  hd_nav.className=""
+  hd_obj.class="navbar "+hd_obj.class
+  hd_nav.classList=hd_obj.class
+
+  let hd_logo=document.getElementById("hd-logo")
+  let hd_led=document.getElementById("ws-led")
+  hd_logo.hidden=hd_obj.logo
+  hd_led.hidden=hd_obj.led
+  hd_led.classList.add('led-green');
+  blinkLED(hd_led);
 }

@@ -7,5 +7,5 @@ factory,  app,  factory, ,        1M,
 ota_0,    app,  ota_0,   ,        1M,
 ota_1,    app,  ota_1,   ,        1M,
 network,  data, nvs,     ,        10k,
-files,  data, spiffs,  ,        500K, 
+files,  data, spiffs,  ,        700K, 
  
