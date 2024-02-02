@@ -1,0 +1,41 @@
+.row{
+    margin-top: -32px;
+    }
+    .netif{
+    margin-top: -18px;
+    }
+
+    .led-button {
+    width: 10px; /* Ajusta el tamaño del botón según tus preferencias */
+  }
+
+  .led-off {
+    background-color: #ccc; /* Color para el estado apagado */
+    border-color: #ccc;
+    color: #fff;
+  }
+
+  .led-red {
+    background-color: #ea0037; /* Color para el estado encendido en rojo */
+    border-color: #a00077;
+    color: #fff;
+  }
+
+  .led-green {
+    background-color: #00ca77; /* Color para el estado encendido en verde */
+    border-color: #00a077;
+    color: #fff;
+  }
+
+  .blink {
+    animation: blink 3s infinite; /* Animación de parpadeo */
+  }
+
+  @keyframes blink {
+    0%, 50%, 100% {
+      opacity: 1;
+    }
+    25%, 75% {
+      opacity: 0;
+    }
+  }

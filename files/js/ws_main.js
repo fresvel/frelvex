@@ -15,6 +15,8 @@ const doc_render={
  *  1   loading file
  *  2   static element, this will not be reload and is saved in the browser
  */
+
+
 const doc_state={ 
     "ws-header":-1,
     "ws-body":-1,
@@ -60,6 +62,10 @@ function ws_renderPage(ren_obj,ws_obj) {
   }
   
   let html_el=document.getElementById(ws_obj.src.object)
+  console.log("**********")
+  console.log(html_el)
+  console.log("**********")
+  alert("Setting element")
   console.log(ws_obj.src.object)
   html_el.innerHTML=ren_obj.content
   console.log(doc_render)
@@ -78,16 +84,19 @@ function ws_renderFile(ws_obj){
     if(ws_obj.load.state==100)
       ws_renderPage(doc_render[ws_obj.src.module][ws_obj.src.object],ws_obj)
   }
+  console.log(`Element received, sending PING`)
+  websocket.send("PING");
+
 }
 
 function onOpen(event) {
-    let ws_app={
+    let ws_req={
       "ws-type":"ws-body", 
       "ws-info":"login/login.html",
       "ws-token":{}
     }
 
-    const json_app = JSON.stringify(ws_app)
+    const json_app = JSON.stringify(ws_req)
     websocket.send(json_app)
     console.log("Sending request:", `${json_app}`)
     let ws_led=document.getElementById('ws-led');
@@ -98,6 +107,8 @@ function onOpen(event) {
       ws_led.classList.add('led-green');
       blinkLED(ws_led);
     }
+
+    ws_add_style()
 }
 
 function onClose(event) {
@@ -250,4 +261,32 @@ function ws_renderHeader(hd_str){
   hd_led.hidden=hd_obj.led
   hd_led.classList.add('led-green');
   blinkLED(hd_led);
+}
+
+function ws_add_style(style){
+
+  console.log("Adding element")
+  let scss=document.createElement("style")
+  scss.id="ws-xss"
+  let dcss = document.createElement("style")
+  dcss.id="ws-dcss"
+  document.head.appendChild(scss)
+  document.head.appendChild(dcss)
+
+  alert("Adding style")
+  console.log("The element was added")
+
+  let ws_style={
+    "ws-xss":"main.css",
+  }
+  let ws_req={
+    "ws-type":"ws-css",
+    "ws-info":ws_style,
+    "ws-token":{}
+  }
+  const json_req = JSON.stringify(ws_req)
+  console.log("JSON style request sent");
+  websocket.send(json_req)
+  let ws_led=document.getElementById('ws-led');
+  blinkLED(ws_led)
 }

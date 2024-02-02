@@ -71,6 +71,15 @@ if(block_size<file_size){
     fread(buffer,1,block_size,file);
     //printf("%s",buffer); 
     file_send(param, buffer,state,i);
+
+    if (i%40==0)
+    {
+        ESP_LOGI(TAG, "Time for refresh proccesses\n");
+        vTaskDelay(100/portTICK_PERIOD_MS);
+    }
+    
+    
+
     }
 }else{
     char buffer[file_size];
