@@ -194,6 +194,11 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
         {
             ESP_LOGI(TAG, "Setting method for: %s\n",ws_type->valuestring);
             ws_file.method="header";
+        }else if (strcmp("ws-section",ws_type->valuestring) == 0){
+            ESP_LOGI(TAG, "Setting method for: %s\n",ws_type->valuestring);
+            ws_file.method="section";
+            
+            return ;
         }else{
             ESP_LOGI(TAG, "Setting alternative method for: %s\n",ws_type->valuestring);
             ws_file.method="render";

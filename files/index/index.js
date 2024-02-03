@@ -1,5 +1,11 @@
 const doc_render={
-  "ws-section":{},
+  "ws-section":{
+    "item":{
+      "html":"",
+      "spot":""
+    
+    }
+  },
   "ws-system":{},
   "ws-topic":{}
   }
@@ -16,11 +22,67 @@ function initWebSocket() {
     websocket.onerror = onError
 }
 
-function ws_callTopic(topic){
+
+
+function ws_callSection(){ //The element already exists
+  
+  let section={
+    "path":"login",
+    "files":["html", "js"]
+  }
+
+  section.forEach(item => {
+    item=`${section.path}/${item}`
+  })
+
+  let ws_req={
+    "ws-method": "ws-section",
+    "ws-info": ws_section
+  }
+
+}
+
+function ws_renderSection(){
+
+}
+/////////////////////////////////////////
+
+function ws_callTopic(topic){ ////The element does not exist
   let ws_topic={}
   files=topic.files
   files.forEach(file => {
     ws_topic[file]=`${topic.path}/${topic.path}.${file}`
+    let id=`${topic.path}-${file}`
+
+    if(document.getElementById(id)===null){
+      switch(file){
+        case "css":
+          let new_css=document.createElement("style")
+          new_css.id=id
+          document.head.appendChild(new_css)
+          alert("CSS ADDED")
+          break;
+        case "js":
+          let new_js=document.createElement("script")
+          new_js.id=id
+          document.body.appendChild(new_js)
+          alert("JS ADDED")
+          break;
+        case "html":
+          let body=document.getElementById("ws-body")
+          body.innerHTML=""
+          let new_html=document.createElement("div")
+          new_html.id=id
+          body.appendChild(new_html)
+          alert("HTML ADDED")
+          break;
+        default:
+      }
+    }else {
+      alert("The element already exists")
+    }
+    
+  
   })
 
   let ws_req={
@@ -32,29 +94,6 @@ function ws_callTopic(topic){
   let ws_str=JSON.stringify(ws_req)
   websocket.send(ws_str)
 }
-
-function onOpen(event) {
-    
-    let ws_led=document.getElementById('ws-led');
-    //console.log(ws_led)
-    if (ws_led!=null) {
-      //console.log(ws_led)
-      ws_led.classList.remove('led-red');
-      ws_led.classList.add('led-green');
-      blinkLED(ws_led);
-    }
-    console.log("Conectado")
-
-
-    let topic={
-      "path":"login",
-      "files":["html", "js"]
-    }
-
-    ws_callTopic(topic)
-
-}
-
 
 function ws_renderTopic(ren_obj,ws_obj) {
   ren_obj[ws_obj.src.object]="" //Crear función para validar si es necesario o permitido borrar o modificar lo existente
@@ -68,11 +107,7 @@ function ws_renderTopic(ren_obj,ws_obj) {
     }
   }
  
-  let html_el=document.getElementById(`topic-${ws_obj.src.object}`)
-  console.log("**********")
-  console.log(html_el)
-  console.log("**********")
-  //alert("Setting element")
+  let html_el=document.getElementById(`${ws_obj.src.file}-${ws_obj.src.object}`)
   console.log(ws_obj.src.object)
   html_el.innerHTML=ren_obj[ws_obj.src.object]
   console.log(doc_render)
@@ -93,46 +128,10 @@ function ws_joinFile(ws_obj){//module file object
       ws_renderTopic(doc_render[ws_obj.src.module][ws_obj.src.file],ws_obj)
   }
   console.log(`Element received, sending PING`)
-  websocket.send("PING");
 
 }
 
-function mainMessage(event) {
-    let ws_msg=JSON.parse(event.data);
-    if (ws_msg===null) {
-      console.log("OBJECT RECIVED IS NOT A JSON");
-    }else if(ws_msg.method ==="render"){
-      console.log("OBJECT RECIVED IS RENDER TYPE");
-      ws_joinFile(ws_msg)
-    }else if(ws_msg.method ==="system"){
-      console.log("SYSTEM");
-    }else if(ws_msg.method ==="header"){
-      ws_renderHeader(ws_msg.data)
-    }else{
-      console.log("NOT IMPLEMENTED");
-      console.log(ws_msg)
-    }
-
-    onMessage(ws_msg)
-
-} /*REVISAR LA FORMA DE SOBREESCRIBIR*/ 
-
-function onError(event) {
-    let ws_led=document.getElementById('ws-led');
-    if (ws_led!=null) {
-    ws_led.classList.remove('led-green');
-    ws_led.classList.add('led-red');
-    blinkLED(ws_led);
-    }
-    console.log('Connection error');
-}
-
-function blinkLED(button) {
-    button.classList.add('blink');
-    setTimeout(() => {
-    button.classList.remove('blink');
-    }, 10000);
-}
+ /*REVISAR LA FORMA DE SOBREESCRIBIR*/ 
 
 /** Above functions are statics and
  * below functions are configured in 
@@ -191,11 +190,74 @@ function ws_renderHeader(hd_str){
   blinkLED(hd_led);
 }
 
+function mainMessage(event) {
+  let ws_msg=null;
+  try{
+    ws_msg=JSON.parse(event.data);
+  }catch(e){
+    console.error()
+  }
+  
+  if (ws_msg===null) {
+    console.log("OBJECT RECIVED IS NOT A JSON");
+  }else if(ws_msg.method ==="render"){
+    console.log("OBJECT RECIVED IS RENDER TYPE");
+    ws_joinFile(ws_msg)
+  }else if(ws_msg.method ==="system"){
+    console.log("SYSTEM");
+  }else if(ws_msg.method ==="header"){
+    ws_renderHeader(ws_msg.data)
+  }else{
+    console.log("NOT IMPLEMENTED");
+    console.log(ws_msg)
+  }
+
+  onMessage(event)
+
+}
+
+function onOpen(event) {
+    
+  let ws_led=document.getElementById('ws-led');
+  //console.log(ws_led)
+  if (ws_led!=null) {
+    //console.log(ws_led)
+    ws_led.classList.remove('led-red');
+    ws_led.classList.add('led-green');
+    blinkLED(ws_led);
+  }
+  console.log("Conectado")
+  let topic={
+    "path":"login",
+    "files":["html", "js"]
+  }
+  ws_callTopic(topic)
+}
+
+function onError(event) {
+  let ws_led=document.getElementById('ws-led');
+  if (ws_led!=null) {
+  ws_led.classList.remove('led-green');
+  ws_led.classList.add('led-red');
+  blinkLED(ws_led);
+  }
+  console.log('Connection error');
+}
+
 function onClose(event) {
   console.log('Connection closed');
   setTimeout(initWebSocket, 2000);
 }
 
+function blinkLED(button) {
+  button.classList.add('blink');
+  setTimeout(() => {
+  button.classList.remove('blink');
+  }, 10000);
+}
+
 function onMessage(ws_msg){
 
 }
+
+

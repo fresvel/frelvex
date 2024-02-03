@@ -1,3 +1,4 @@
+alert("Function integrated")
 let state=1;
 function updateFilename() {
     var input = document.getElementById('ota-file');
@@ -10,7 +11,6 @@ function updateFilename() {
 }
 
 function ws_sendFile(){
-    ws_test()
     let input=document.getElementById("ota-file");
     let file=input.files[0];
     let bar=document.getElementById("ota-pbar")
@@ -20,7 +20,7 @@ function ws_sendFile(){
     let offset=0;
     websocket.send('a');
 
-    function sendChunk(){
+function sendChunk(){
         if(state==1){
         const chunk=file.slice(offset,offset + chunk_size)
         websocket.send(chunk)
@@ -71,4 +71,4 @@ onMessage=function (event) {
     }
     //ws_concat_data(event.data)
 }
-websocket.onmessage = onMessage
+websocket.onmessage = mainMessage
