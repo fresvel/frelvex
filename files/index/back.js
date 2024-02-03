@@ -1,12 +1,10 @@
 const doc_render={
-    "ws-header":{"content":""},
-    "ws-body":{"content":""},
     "ws-section":{},
-    "ws-footer":{"content":""},
-    "ws-system":{"content":""},
-    "ws-js":{"content":""},
-    "ws-css":{"content":""},
-};
+    "ws-system":{},
+    "ws-topic":{}
+    }
+
+
 
 /**
  * Values for doc state: 
@@ -65,7 +63,7 @@ function ws_renderPage(ren_obj,ws_obj) {
   console.log("**********")
   console.log(html_el)
   console.log("**********")
-  alert("Setting element")
+  //alert("Setting element")
   console.log(ws_obj.src.object)
   html_el.innerHTML=ren_obj.content
   console.log(doc_render)
@@ -108,7 +106,7 @@ function onOpen(event) {
       blinkLED(ws_led);
     }
 
-    ws_add_style()
+    ws_add_style("cs-led")
 }
 
 function onClose(event) {
@@ -165,13 +163,18 @@ function blinkLED(button) {
 
 function login_Btn(js_name){
 
-  ws_configHeader()
-  //here request de ccs elements
   let ws_req={
     "ws-type":"ws-body",
     "ws-info":"ota/ota.html",
     "ws-token":{}
   }
+
+  ws_configHeader()
+
+
+
+  ws_add_element()
+  //here request de ccs elements
   const json_req = JSON.stringify(ws_req)
   websocket.send(json_req)
   console.log("Body requested");
@@ -266,26 +269,54 @@ function ws_renderHeader(hd_str){
 function ws_add_style(style){
 
   console.log("Adding element")
-  let scss=document.createElement("style")
-  scss.id="ws-xss"
-  let dcss = document.createElement("style")
-  dcss.id="ws-dcss"
-  document.head.appendChild(scss)
-  document.head.appendChild(dcss)
+  let xcss=document.createElement("style")
+  xcss.id=style
+  document.head.appendChild(xcss)
 
-  alert("Adding style")
+  //alert("Adding style")
   console.log("The element was added")
 
   let ws_style={
     "ws-xss":"main.css",
   }
   let ws_req={
-    "ws-type":"ws-css",
+    "ws-method":"ws-css",
     "ws-info":ws_style,
     "ws-token":{}
   }
   const json_req = JSON.stringify(ws_req)
   console.log("JSON style request sent");
+  websocket.send(json_req)
+  let ws_led=document.getElementById('ws-led');
+  blinkLED(ws_led)
+}
+
+
+function ws_add_element(ws_req){
+  let info_obj=Object.keys(ws_req["ws-info"]);
+  if(ws_req["ws-type"]=="ws-css"){
+    info_obj.forEach(item =>{
+      if(document.getElementById(item)===null){
+        let new_el= document.createElement("style");
+        new_el.id=item
+        document.head.appendChild(new_el)
+      }    
+    })
+  }else if(ws_req["ws-type"]=="ws-js"){
+    info_obj.forEach(item =>{
+      if(document.getElementById(item)===null){
+        let new_el= document.createElement("script");
+        new_el.id=item
+        document.body.appendChild(new_el)
+      }
+    })
+    //Add security options like hash with system functions
+  } 
+  else
+    console.log("Element not supported")
+
+  const json_req = JSON.stringify(ws_req)
+  alert("Element created, request send");
   websocket.send(json_req)
   let ws_led=document.getElementById('ws-led');
   blinkLED(ws_led)

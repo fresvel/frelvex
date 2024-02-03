@@ -234,16 +234,13 @@ static httpd_handle_t start_wss_echo_server(void)
     // Set URI handlers
     ESP_LOGI(TAG, "Registering URI handlers");
     httpd_register_uri_handler(server, &ws);
-    httpd_register_uri_handler(server,&ws_apphtml_uri);
-    httpd_register_uri_handler(server,&ws_appjs_uri);
-    httpd_register_uri_handler(server,&ws_bulmacss_uri);
-    httpd_register_uri_handler(server,&ws_logoimg_uri);
-    httpd_register_uri_handler(server,&panel_js_uri);
-    httpd_register_uri_handler(server,&chart_js_uri);
-    httpd_register_uri_handler(server,&ota_uri);
-    httpd_register_uri_handler(server,&ota_post_uri);
+    httpd_register_uri_handler(server,&index_css_uri);
+    httpd_register_uri_handler(server,&index_html_uri);
+    httpd_register_uri_handler(server,&index_js_uri);
+    httpd_register_uri_handler(server,&index_svg_uri);
+    httpd_register_uri_handler(server,&main_css_uri);
+    httpd_register_uri_handler(server,&main_js_uri);
     wss_keep_alive_set_user_ctx(keep_alive, server);
-    httpd_register_uri_handler(server,&get_panel);
 
     return server;
 }

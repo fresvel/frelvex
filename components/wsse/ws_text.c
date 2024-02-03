@@ -54,12 +54,12 @@ static void ws_send_files_init(void *param, char *buffer, u_int8_t state, int ta
 
         cJSON *src=cJSON_CreateObject();
         cJSON_AddStringToObject(src, "module",module);
-        cJSON_AddStringToObject(src, "file",fname); //validate if really it is necessary, maybe it is only needed object
+        cJSON_AddStringToObject(src, "file",strtok(fname, "/")); //validate if really it is necessary, maybe it is only needed object
         cJSON_AddStringToObject(src, "object",object);
 
 
         cJSON *root = cJSON_CreateObject();
-        cJSON_AddStringToObject(root, "method",method); //module es ws-type
+        cJSON_AddStringToObject(root, "method",method);
         cJSON_AddItemToObject(root, "load",load);
         cJSON_AddItemToObject(root, "src",src);
         
@@ -117,11 +117,7 @@ static void ws_app_default(char * data_str){}
 
 static void ws_json_config_path(cJSON **json_files_path){ //Desde system se puede crear una función para crear nuevos directorios virtuales
 *json_files_path=cJSON_CreateObject();
-cJSON_AddItemToObject(*json_files_path,"ws-body",cJSON_CreateString("/files/html/body"));
-cJSON_AddItemToObject(*json_files_path,"ws-header",cJSON_CreateString("/files/html/header"));
-cJSON_AddItemToObject(*json_files_path,"ws-footer",cJSON_CreateString("/files/html/footer")); 
-cJSON_AddItemToObject(*json_files_path,"ws-css",cJSON_CreateString("/files/css"));
-cJSON_AddItemToObject(*json_files_path,"ws-js",cJSON_CreateString("/files/js"));
+cJSON_AddItemToObject(*json_files_path,"ws-topic",cJSON_CreateString("/files/topic"));
 cJSON_AddItemToObject(*json_files_path,"ws-system",cJSON_CreateString("/files/system"));
 cJSON_AddItemToObject(*json_files_path,"ws-section",cJSON_CreateString("/files/section"));
 }
@@ -143,15 +139,15 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
         return;
     }
     
-    cJSON *ws_type=cJSON_GetObjectItem(ws_obj_req,"ws-type");
+    cJSON *ws_type=cJSON_GetObjectItem(ws_obj_req,"ws-method");
     if (!cJSON_IsString(ws_type))
     {
-        ESP_LOGI(TAG, "The element ws-type must be a string\n");
+        ESP_LOGI(TAG, "The element ws-method must be a string\n");
         return;
     }
 
     char* ws_strtype=ws_type->valuestring;
-    printf("ws-type %s\n", ws_type->valuestring);
+    printf("ws-method %s\n", ws_type->valuestring);
     
     cJSON *ws_info=cJSON_GetObjectItem(ws_obj_req,"ws-info");
 
@@ -215,6 +211,7 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
             if (cJSON_IsString(item))
             {
                 ws_file.fname=item->valuestring;
+                
                 ws_file.object=item->string;
                 char ws_path[strlen(item->valuestring)+strlen(base_path)+1]; //POSIBLE REPORT
                 sprintf(ws_path,"%s/%s",base_path,item->valuestring);

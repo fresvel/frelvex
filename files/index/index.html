@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head id="ws-head">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="ws-title">Frelvex</title>
+    <link rel="icon" type="image/x-icon" href="index.svg"><!--evita la carga de favicon data:image/x-icon-->
+    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="index.css">
+    <style id="topic-css"></style>
+  </head>
+  <body>
+    <header id="ws-header">
+        <nav class="navbar is-primary" id="hd-nav">
+          <div class="navbar-brand">
+            <a class="button m-3 is-primary" id="hd-brand">
+              <img src="index.svg" width="50" height="85" id="hd-logo">
+            </a> 
+          </div>
+          <div class="navbar-start" id="hd-menu">
+          </div>
+          <div class="navbar-end" id="hd-end">
+            <div class="navbar-item">
+                <div class="container" >
+                    <button id="ws-led" class="button is-rounded led-button led-off" onclick="onOpen(this)"></button>
+                </div>
+            </div>
+          </div>
+        </nav>
+    </header>
+    <div id="topic-html">    
+    </div>
+    <script src="index.js"></script>
+    <script id="topic-js"></script>
+</body>
+</html>

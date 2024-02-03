@@ -14,53 +14,28 @@ static void httpd_send_file(void*param, char *buffer, uint8_t state, int part){
 }
 
 
-
-static esp_err_t paneljs_handler(httpd_req_t *req){
-    if (req->method == HTTP_GET)
-    {
-        ESP_LOGI(TAG, "New client connected");
-        
-        httpd_resp_set_type(req, "text/javascript");
-        fsys_xFuntion_file("/spiffs/js/panel.js",httpd_send_file,req);// fsys_xFuntion_file le pasa el buffer del archivo y req a la función 
-        
-    }
-    return ESP_OK;
-    
-}
-
- const httpd_uri_t panel_js_uri={
-    .uri = "/panel.js",
-    .method = HTTP_GET,
-    .handler = paneljs_handler,
-    .user_ctx = NULL
-};
-
-
-static esp_err_t ws_appthml_handler(httpd_req_t *req){
+static esp_err_t index_html_handler(httpd_req_t *req){
         ESP_LOGI(TAG, "New client connected, OTA HTML");
         httpd_resp_set_type(req, "text/html");
-        fsys_xFuntion_file("/files/html/header/head.html",httpd_send_file,req); // envía los archivos
-        fsys_xFuntion_file("/files/html/header/empty.html",httpd_send_file,req);
-        fsys_xFuntion_file("/files/html/body/body.html",httpd_send_file,req);
-        fsys_xFuntion_file("/files/html/footer/footer.html",httpd_send_file,req);
+        fsys_xFuntion_file("/files/index/index.html",httpd_send_file,req);
         httpd_resp_sendstr_chunk(req,NULL);//Finaliza el envío de los archivos
     return ESP_OK;
 }
 
-const httpd_uri_t ws_apphtml_uri={
-    .uri = "/app.html",
+const httpd_uri_t index_html_uri={
+    .uri = "/",
     .method = HTTP_GET,
-    .handler = ws_appthml_handler,
+    .handler = index_html_handler,
     .user_ctx = NULL
 };
 
-static esp_err_t ws_appjs_handler(httpd_req_t *req){
+static esp_err_t index_js_handler(httpd_req_t *req){
     if (req->method == HTTP_GET)
     {
         ESP_LOGI(TAG, "New client connected appjs");
         
         httpd_resp_set_type(req, "text/javascript");
-        fsys_xFuntion_file("/files/js/ws_main.js",httpd_send_file,req);
+        fsys_xFuntion_file("/files/index/index.js",httpd_send_file,req);
         httpd_resp_sendstr_chunk(req,NULL);
         
     }
@@ -69,112 +44,83 @@ static esp_err_t ws_appjs_handler(httpd_req_t *req){
 }
 
 
- const httpd_uri_t ws_appjs_uri={
-    .uri = "/ws_main.js",
+ const httpd_uri_t index_js_uri={
+    .uri = "/index.js",
     .method = HTTP_GET,
-    .handler = ws_appjs_handler,
+    .handler = index_js_handler,
     .user_ctx = NULL
 };
 
-
-static esp_err_t chartjs_handler(httpd_req_t *req){
-    if (req->method == HTTP_GET){
-        ESP_LOGI(TAG, "New client connected");
-        httpd_resp_set_type(req, "text/javascript");
-        fsys_xFuntion_file("/spiffs/js/chart.js",httpd_send_file,req);
-        
-    }
-    return ESP_OK;      
-}
-
- const httpd_uri_t chart_js_uri={
-    .uri = "/chart.js",
-    .method = HTTP_GET,
-    .handler = chartjs_handler,
-    .user_ctx = NULL
-};
-
-
-static esp_err_t ws_bulmacss_handler(httpd_req_t *req){
-    if (req->method == HTTP_GET)
-    {
-        ESP_LOGI(TAG, "New client connected");
-        
-        httpd_resp_set_type(req, "text/css");
-        fsys_xFuntion_file("/files/css/lib/bulma.css",httpd_send_file,req);
-        httpd_resp_sendstr_chunk(req,NULL);
-        
-    }
-    return ESP_OK;
-    
-}
-
- const httpd_uri_t ws_bulmacss_uri={
-    .uri = "/bulma.css",
-    .method = HTTP_GET,
-    .handler = ws_bulmacss_handler,
-    .user_ctx = NULL
-};
-
-static esp_err_t ws_logoimg_handler(httpd_req_t *req){
+static esp_err_t index_svg_handler(httpd_req_t *req){
     if (req->method == HTTP_GET){
         ESP_LOGI(TAG, "New client connected");
         httpd_resp_set_type(req, "image/svg+xml");
-        fsys_xFuntion_file("/files/img/logo.svg",httpd_send_file,req);
+        fsys_xFuntion_file("/files/index/index.svg",httpd_send_file,req);
         httpd_resp_sendstr_chunk(req,NULL);
     }
     return ESP_OK;      
 }
 
- const httpd_uri_t ws_logoimg_uri={
-    .uri = "/logo.svg",
+ const httpd_uri_t index_svg_uri={
+    .uri = "/index.svg",
     .method = HTTP_GET,
-    .handler = ws_logoimg_handler,
+    .handler = index_svg_handler,
     .user_ctx = NULL
 };
 
 
-static esp_err_t ota_handler(httpd_req_t *req){
+static esp_err_t index_css_handler(httpd_req_t *req){
     if (req->method == HTTP_GET){
         ESP_LOGI(TAG, "New client connected, OTA HTML");
-        httpd_resp_set_type(req, "text/html");
-        fsys_xFuntion_file("/files/html/body/ota/ota.html",httpd_send_file,req);
-        
+        httpd_resp_set_type(req, "text/css");
+        fsys_xFuntion_file("/files/index/index.css",httpd_send_file,req);
+        httpd_resp_sendstr_chunk(req,NULL);
     }
     return ESP_OK;
 }
 
- const httpd_uri_t ota_uri={
-    .uri = "/ota.html",
+ const httpd_uri_t index_css_uri={
+    .uri = "/index.css",
     .method = HTTP_GET,
-    .handler = ota_handler,
+    .handler = index_css_handler,
     .user_ctx = NULL
 };
 
- const httpd_uri_t ota_post_uri={
-    .uri = "/ota_post",
-    .method = HTTP_POST,
-    .handler = ota_handler,
+
+static esp_err_t main_css_handler(httpd_req_t *req){
+    if (req->method == HTTP_GET){
+        ESP_LOGI(TAG, "New client connected, OTA HTML");
+        httpd_resp_set_type(req, "text/css");
+        fsys_xFuntion_file("/files/lib/css/main.css",httpd_send_file,req);
+        httpd_resp_sendstr_chunk(req,NULL);
+    }
+    return ESP_OK;
+}
+
+ const httpd_uri_t main_css_uri={
+    .uri = "/main.css",
+    .method = HTTP_GET,
+    .handler = main_css_handler,
     .user_ctx = NULL
 };
 
-static esp_err_t panel_handler(httpd_req_t *req){
+static esp_err_t main_js_handler(httpd_req_t *req){
     if (req->method == HTTP_GET)
     {
-        ESP_LOGI(TAG, "New client connected");
+        ESP_LOGI(TAG, "New client connected appjs");
         
-        httpd_resp_set_type(req, "text/html");
-        fsys_xFuntion_file("/spiffs/html/panel.html",httpd_send_file,req);
-        //httpd_resp_send(req, buffer,HTTPD_RESP_USE_STRLEN);
+        httpd_resp_set_type(req, "text/javascript");
+        fsys_xFuntion_file("/files/lib/js/main.js",httpd_send_file,req);
+        httpd_resp_sendstr_chunk(req,NULL);
         
     }
     return ESP_OK;
     
 }
 
-const httpd_uri_t get_panel={
-    .uri = "/panel",
+ const httpd_uri_t main_js_uri={
+    .uri = "/main.js",
     .method = HTTP_GET,
-    .handler = panel_handler,
+    .handler = main_js_handler,
     .user_ctx = NULL
 };
