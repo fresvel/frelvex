@@ -1,7 +1,7 @@
 {
     "title":"OTA System",
     "menu":["Sensors","Protocols","Network","Dashboard","System"],
-    "class":"is-primary",
+    "class":"is-dark",
     "logo":false,
     "led":true
 }

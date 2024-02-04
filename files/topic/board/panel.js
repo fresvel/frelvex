@@ -105,3 +105,10 @@ btn_test.addEventListener('click', ()=>{
 </div>
     `
 });
+
+
+function board_board_json(json){
+  ws_renderHeader(json)
+  console.log(json)
+  alert("Función integrada: "+json)
+}

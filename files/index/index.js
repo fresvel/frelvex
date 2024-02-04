@@ -24,23 +24,6 @@ function initWebSocket() {
     websocket.onerror = onError
 }
 
-function ws_waitElement(owner, id){
-  let pos_div=document.getElementById(owner)
-  if(pos_div==null){
-    alert("Waiting for element: " + owner+"id: " + id)
-    setTimeout(()=>{ws_waitElement(owner, id)},10000)
-  }else{
-    console.log(pos_div)
-    console.log(owner)
-    pos_div.innerHTML=""
-    let new_html=document.createElement("div")
-    new_html.id=id
-    pos_div.appendChild(new_html)
-    alert("HTML ADDED")
-  }
-
-}
-
 function ws_callRender(param,owner="ws-body"){ ////The element does not exist
   let i=0
 
@@ -133,6 +116,18 @@ function ws_joinFile(ws_obj){//module file object
       let html_ow=document.getElementById(ws_obj.src.owner)
       html_ow.innerHTML=""
       html_ow.appendChild(new_el)
+    }if(ext=="json"){
+      console.log(ws_obj)
+      alert("JSON DETECTED!! ")
+      let fn = `${path}_${file}_${ext}`;
+
+      if (typeof window[fn] === 'function') {
+        window[fn](doc_render[module][path][file][ext]); // Esto ejecutará la función path_json()
+      } else {
+        console.error("La variable no contiene el nombre de una función válida");
+      }
+      return
+
     }
 
 
@@ -159,23 +154,6 @@ function ws_joinFile(ws_obj){//module file object
  * if they already exist
 */
 
-function ws_configHeader(){
-
-  let ws_header={
-    "ws-ota":"ota/ota.json"
-  }
-  
-  let ws_req={
-    "ws-type":"ws-header",
-    "ws-info":ws_header
-  }
-
-  let req_str=JSON.stringify(ws_req)
-  websocket.send(req_str)
-  console.log("Solicitud enviada")
-}
-
-
 function ws_renderHeader(hd_str){
   
   hd_obj=JSON.parse(hd_str)
@@ -190,7 +168,7 @@ function ws_renderHeader(hd_str){
     item.textContent = el;
     menu.appendChild(item);
   });
-  let hd_brand=document.getElementById("hd-brand")
+  let hd_brand=document.getElementById("bd-menu")
   hd_brand.className=""
   let brand_sty="button m-3 "+hd_obj.class
   hd_brand.className=brand_sty
@@ -264,7 +242,7 @@ function onOpen(event) {
 
   let ws_req={
     "path":"board",
-    "files":["board.html","panel.js"]
+    "files":["board.html","panel.js","board.json"]
   }
   ws_callRender(ws_req)
 
