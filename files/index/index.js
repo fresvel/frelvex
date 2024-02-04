@@ -1,9 +1,11 @@
 const doc_render={
   "ws-section":{
-    "item":{
-      "html":"",
-      "spot":""
-    
+    "file":{
+      "s1":{
+        "html":"",//contenido del div
+        "spot":"",//id del div y nombre del file
+        "json":{} //parámetros del div
+      }
     }
   },
   "ws-system":{},
@@ -24,38 +26,74 @@ function initWebSocket() {
 
 
 
-function ws_callSection(){ //The element already exists
-  
-  let section={
-    "path":"login",
-    "files":["html", "js"]
-  }
+function ws_callSection(section,owner){ //The element already exists
 
-  section.forEach(item => {
-    item=`${section.path}/${item}`
+  let sc_files=[]
+  let i=0
+  section.files.forEach(item => {
+    sc_files[i]=`${section.path}/${item}`
+    i++
   })
+
+  let ws_info={
+    "array": sc_files,
+    "owner": owner
+  }
 
   let ws_req={
     "ws-method": "ws-section",
-    "ws-info": ws_section
+    "ws-info": ws_info,
+    "ws-token": {}
   }
+
+  let ws_str=JSON.stringify(ws_req)
+  websocket.send(ws_str)
 
 }
 
-function ws_renderSection(){
+function ws_renderSection(ren_obj, ws_msg){
 
+let path = ws_msg.src.file.split("/")
+let file =path[path.length-1]
+file=file.split(".")[0]
+let ext=file.split(".")[1]
+path=path[0]
+
+
+
+ren_obj[path]="" //Crear función para validar si es necesario o permitido borrar o modificar lo existente
+  for(let i=0;i<=ws_obj.load.tally;i++){
+    if(ren_obj[i]===undefined){
+      alert("File is not completely loaded")
+      break
+    }else{
+      ren_obj[ws_obj.src.object]+=ren_obj[i]
+      delete ren_obj[i]
+    }
+  }
+ 
+  let html_el=document.getElementById(`${ws_obj.src.file}-${ws_obj.src.object}`)
+  console.log(ws_obj.src.object)
+  html_el.innerHTML=ren_obj[ws_obj.src.object]
+  console.log(doc_render)
+
+
+  //RENDERIZAR EN FUNCIÓN DEL VALOR DE  FILE
+  //CAMBIAR VARIABLES FILE Y OBJETC POR PATH Y FILE
+  //INTEGRAR ESTA FUNCIÓN EN VEZ DE RENDER TOPIC
+  
 }
 /////////////////////////////////////////
 
 function ws_callTopic(topic){ ////The element does not exist
-  let ws_topic={}
-  files=topic.files
-  files.forEach(file => {
-    ws_topic[file]=`${topic.path}/${topic.path}.${file}`
-    let id=`${topic.path}-${file}`
-
+  let i=0
+  let ws_topic=[]
+  topic.files.forEach(item => {
+    ws_topic[i]=`${topic.path}/${item}`
+    let ext=item.split('.')[1]
+    let id=`tp-${item.split('.')[0]}-${ext}`
     if(document.getElementById(id)===null){
-      switch(file){
+      switch(ext){
         case "css":
           let new_css=document.createElement("style")
           new_css.id=id
@@ -81,10 +119,9 @@ function ws_callTopic(topic){ ////The element does not exist
     }else {
       alert("The element already exists")
     }
-    
-  
+    i++
   })
-
+  
   let ws_req={
     "ws-method":"ws-topic", 
     "ws-info":ws_topic,
@@ -95,38 +132,58 @@ function ws_callTopic(topic){ ////The element does not exist
   websocket.send(ws_str)
 }
 
-function ws_renderTopic(ren_obj,ws_obj) {
-  ren_obj[ws_obj.src.object]="" //Crear función para validar si es necesario o permitido borrar o modificar lo existente
-  for(let i=0;i<=ws_obj.load.tally;i++){
-    if(ren_obj[i]===undefined){
-      alert("File is not completely loaded")
-      break
-    }else{
-      ren_obj[ws_obj.src.object]+=ren_obj[i]
-      delete ren_obj[i]
-    }
-  }
- 
-  let html_el=document.getElementById(`${ws_obj.src.file}-${ws_obj.src.object}`)
-  console.log(ws_obj.src.object)
-  html_el.innerHTML=ren_obj[ws_obj.src.object]
-  console.log(doc_render)
-}
-
 function ws_joinFile(ws_obj){//module file object
   console.log("JOINING file")
   console.log(ws_obj)
-  if(ws_obj.src.object===""){
-    doc_render[ws_obj.src.module][ws_obj.load.tally]=ws_obj.data
-    if(ws_obj.load.state==100)
-      ws_renderTopic(doc_render[ws_obj.src.module],ws_obj)
-  }else{
-    if(doc_render[ws_obj.src.module][ws_obj.src.file]===undefined)
-      doc_render[ws_obj.src.module][ws_obj.src.file]={}
-    doc_render[ws_obj.src.module][ws_obj.src.file][ws_obj.load.tally]=ws_obj.data
-    if(ws_obj.load.state==100)
-      ws_renderTopic(doc_render[ws_obj.src.module][ws_obj.src.file],ws_obj)
+  
+  let path = ws_obj.src.file.split("/")
+  let file =path[path.length-1].split(".")[0]
+  let ext=path[path.length-1].split(".")[1]
+  path=path[0]
+  let module =ws_obj.src.module
+  let part=ws_obj.load.tally
+
+  if(doc_render[module][path]===undefined)
+    doc_render[module][path]={}
+  if(doc_render[module][path][file]===undefined)
+    doc_render[module][path][file]={}
+  doc_render[module][path][file][part]=ws_obj.data
+ 
+  if(ws_obj.load.state==100){
+    doc_render[module][path][file][ext]=""
+    for(let i=0;i<=part;i++){
+      if(doc_render[module][path][file][i]===undefined){
+        alert("File is not completely loaded")
+        break
+      }else{
+        doc_render[module][path][file][ext]+=doc_render[module][path][file][i]
+        delete doc_render[module][path][file][i]
+      }
+    }
+    let id;
+    switch(module){
+      case "ws-section":
+        if(ext=="json"){
+          alert("Execute code for JSON param")
+          return
+        }
+        id=`sc-${file}-${ext}`
+        doc_render[module][path][file].owner=ws_obj.src.owner
+        break
+      case "ws-topic":
+        id=`tp-${file}-${ext}`
+      break
+      default:
+        id=`ws-${file}-${ext}`
+    }
+
+    let html_el=document.getElementById(id)
+    console.log(ws_obj.src.object)
+    html_el.innerHTML=doc_render[module][path][file][ext]
+    console.log(doc_render)
   }
+
+
   console.log(`Element received, sending PING`)
 
 }
@@ -229,7 +286,7 @@ function onOpen(event) {
   console.log("Conectado")
   let topic={
     "path":"login",
-    "files":["html", "js"]
+    "files":["login.html", "login.js"]
   }
   ws_callTopic(topic)
 }

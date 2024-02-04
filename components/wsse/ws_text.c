@@ -29,7 +29,7 @@ typedef struct {
     char *method;
     char *fname;
     char *module;
-    char *object;
+    char *owner;
 }ws_send_file_t;
 
 
@@ -41,8 +41,10 @@ static void ws_send_files_init(void *param, char *buffer, u_int8_t state, int ta
         httpd_req_t *req=(httpd_req_t*)ws_file->req;
         char* method=(char*)ws_file->method;
         char* fname=(char*)ws_file->fname;
+        char fcopy[strlen(fname)];
+        strcpy(fcopy,fname);
         char* module=(char*)ws_file->module;
-        char* object=(char*)ws_file->object;
+        char* owner=(char*)ws_file->owner;
 
         printf("\033[0;35m");
         printf("Valor de method: %s\n",method);
@@ -54,8 +56,8 @@ static void ws_send_files_init(void *param, char *buffer, u_int8_t state, int ta
 
         cJSON *src=cJSON_CreateObject();
         cJSON_AddStringToObject(src, "module",module);
-        cJSON_AddStringToObject(src, "file",strtok(fname, "/")); //validate if really it is necessary, maybe it is only needed object
-        cJSON_AddStringToObject(src, "object",object);
+        cJSON_AddStringToObject(src, "file",fname); //validate if really it is necessary, maybe it is only needed object
+        cJSON_AddStringToObject(src, "owner",owner);
 
 
         cJSON *root = cJSON_CreateObject();
@@ -122,6 +124,35 @@ cJSON_AddItemToObject(*json_files_path,"ws-system",cJSON_CreateString("/files/sy
 cJSON_AddItemToObject(*json_files_path,"ws-section",cJSON_CreateString("/files/section"));
 }
 
+void ws_arr_process(cJSON **ws_arr, ws_send_file_t *ws_file, char* base_path){
+        ESP_LOGI(TAG, "The ws-info element is an Array, requesting files\n");
+        int arr_size=cJSON_GetArraySize(*ws_arr);
+        ws_file->method="render";
+        
+        for (size_t i = 0; i < arr_size; i++)
+        {
+            cJSON *item = cJSON_GetArrayItem(*ws_arr,i);
+            if (cJSON_IsString(item))
+            {
+                ws_file->fname=item->valuestring;
+                //ws_file->owner=item->valuestring;
+                char ws_path[strlen(item->valuestring)+strlen(base_path)+1]; //POSIBLE REPORT
+                sprintf(ws_path,"%s/%s",base_path,item->valuestring);
+                printf("Path value to get file %s\n",ws_path); 
+                fsys_xFuntion_file(ws_path,ws_send_files_init,ws_file);
+                //free(str_path);
+                //Una vez que finaliza envíar señal de fin      
+            }else{
+                ESP_LOGE(TAG,"The element is not a string in the position: %d\n", i);
+                printf("COntrol");
+                cJSON_Delete(item);
+                return ;
+            }
+
+        }
+}
+
+
 void ws_app_text(char *ws_app_str, httpd_req_t *req) {
 
     /*THIS WILL BE TO SEND TO MAIN OR TO A CONFIG OR INIT FUNCTION*/
@@ -154,35 +185,14 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
     ws_send_file_t ws_file;
     ws_file.req=req;
     ws_file.module=ws_strtype;
-    ws_file.object="";
+    ws_file.owner="";
 
     char* base_path=cJSON_GetObjectItem(json_files_path,ws_strtype)->valuestring;
 /*ARRAY REQUEST BASE*/
     if (cJSON_IsArray(ws_info))
     {
-        ESP_LOGI(TAG, "The ws-info element is an Array, requesting files\n");
-        int arr_size=cJSON_GetArraySize(ws_info);
-        ws_file.method="render";
-        for (size_t i = 0; i < arr_size; i++)
-        {
-            cJSON *item = cJSON_GetArrayItem(ws_info,i);
-            if (cJSON_IsString(item))
-            {
-                ws_file.fname=item->valuestring;
-                char ws_path[strlen(item->valuestring)+strlen(base_path)+1]; //POSIBLE REPORT
-                sprintf(ws_path,"%s/%s",base_path,item->valuestring);
-                printf("Path value to get file %s\n",ws_path); 
-                fsys_xFuntion_file(ws_path,ws_send_files_init,&ws_file);
-                //free(str_path);
-                //Una vez que finaliza envíar señal de fin      
-            }else{
-                ESP_LOGE(TAG,"The element is not a string in the position: %d\n", i);
-                printf("COntrol");
-                cJSON_Delete(item);
-                return ;
-            }
+        ws_arr_process(&ws_info,&ws_file,base_path);
 
-        }
 /*OBJETC REQUEST BASE*/
     }else if (cJSON_IsObject(ws_info))
     {
@@ -196,8 +206,29 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
             ws_file.method="header";
         }else if (strcmp("ws-section",ws_type->valuestring) == 0){
             ESP_LOGI(TAG, "Setting method for: %s\n",ws_type->valuestring);
-            ws_file.method="section";
-            
+            ws_file.method="render";
+            cJSON *owner=cJSON_GetObjectItem(ws_info,"owner");
+            if (owner==NULL){
+                ESP_LOGE(TAG,"owner not detected");
+                return;
+            }
+            if (!cJSON_IsString(owner))
+            {
+                ESP_LOGE(TAG,"The tipy of owner is not correct");
+                return;
+            }
+            cJSON *array=cJSON_GetObjectItem(ws_info,"array");
+            if (array==NULL){
+                ESP_LOGE(TAG,"Array not detected");
+                return;
+            }
+            if (!cJSON_IsArray(array))
+            {
+                ESP_LOGE(TAG,"The type of array is not correct");
+                return;
+            }
+            ws_file.owner=owner->valuestring;
+            ws_arr_process(&array,&ws_file,base_path);
             return ;
         }else{
             ESP_LOGI(TAG, "Setting alternative method for: %s\n",ws_type->valuestring);
@@ -217,7 +248,7 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
             {
                 ws_file.fname=item->valuestring;
                 
-                ws_file.object=item->string;
+                ws_file.owner=item->string;
                 char ws_path[strlen(item->valuestring)+strlen(base_path)+1]; //POSIBLE REPORT
                 sprintf(ws_path,"%s/%s",base_path,item->valuestring);
                 printf("Path value to get file %s\n",ws_path); 

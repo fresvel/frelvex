@@ -1,53 +1,35 @@
-<section class="hero is-fullheight is-dark">
-    <div class="hero-body">          
-      <div class="container">       
-        <div class="columns is-centered">
-          <div class="column is-4-tablet is-3-desktop is-2-widescreen">
-            <br>
-            <br>
-            <img src="index.svg" width="150" height="255">
-          </div>
-          <div class="column is-5-tablet is-4-desktop is-3-widescreen"> 
-            <form class="box" enctype="multipart/form-data" method="post" action="/ota_post">
-              <div class="file has-name is-fullwidth">
-                  <label class="file-label">
-                    <input class="file-input" type="file" name="resume" id="ota-file" onchange="updateFilename()">
-                    <span class="file-cta">
-                      <span class="file-icon">
-                        <i class="fas fa-upload"></i>
-                      </span>
-                      <span class="file-label">
-                        Choose a file
-                      </span>
-                    </span>
-                    <span class="file-name" id="ota-fname">
-                      file.bin
-                    </span>
-                  </label>
-              </div>
-              <div class="field">
-                <label class="label"><br></label>
-                <div class="control has-icons-left">
-                  <progress class="progress is-success" value="0" max="100" id="ota-pbar">0%</progress>
-                  
-                    <div class="notification is-light" id="resultado" hidden="true">
-                      Filed Loaded
-                    </div>
-                    <span></span>
-                  
-                </div>
-              </div>
-              <div class="field">
-                <button class="button is-primary is-fullwidth" type="button" onclick="ws_sendFile()">
-                  Upload
-                </button>
-              </div>
-            </form>
-          </div>
-          <div class="column is-4-tablet is-3-desktop is-2-widescreen">
-            <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-          </div>
+<form class="box" enctype="multipart/form-data" method="post" action="/ota_post">
+  <div class="file has-name is-fullwidth">
+      <label class="file-label">
+        <input class="file-input" type="file" name="resume" id="ota-file" onchange="updateFilename()">
+        <span class="file-cta">
+          <span class="file-icon">
+            <i class="fas fa-upload"></i>
+          </span>
+          <span class="file-label">
+            Choose a file
+          </span>
+        </span>
+        <span class="file-name" id="ota-fname">
+          file.bin
+        </span>
+      </label>
+  </div>
+  <div class="field">
+    <label class="label"><br></label>
+    <div class="control has-icons-left">
+      <progress class="progress is-success" value="0" max="100" id="ota-pbar">0%</progress>
+      
+        <div class="notification is-light" id="resultado" hidden="true">
+          Filed Loaded
         </div>
-      </div>
+        <span></span>
+      
     </div>
-</section>
+  </div>
+  <div class="field">
+    <button class="button is-primary is-fullwidth" type="button" onclick="ws_sendFile()">
+      Upload
+    </button>
+  </div>
+</form>
