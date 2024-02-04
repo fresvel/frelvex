@@ -24,68 +24,24 @@ function initWebSocket() {
     websocket.onerror = onError
 }
 
-
-
-function ws_callSection(section,owner){ //The element already exists
-
-  let sc_files=[]
-  let i=0
-  section.files.forEach(item => {
-    sc_files[i]=`${section.path}/${item}`
-    i++
-  })
-
-  let ws_info={
-    "array": sc_files,
-    "owner": owner
+function ws_waitElement(owner, id){
+  let pos_div=document.getElementById(owner)
+  if(pos_div==null){
+    alert("Waiting for element: " + owner+"id: " + id)
+    setTimeout(()=>{ws_waitElement(owner, id)},10000)
+  }else{
+    console.log(pos_div)
+    console.log(owner)
+    pos_div.innerHTML=""
+    let new_html=document.createElement("div")
+    new_html.id=id
+    pos_div.appendChild(new_html)
+    alert("HTML ADDED")
   }
-
-  let ws_req={
-    "ws-method": "ws-section",
-    "ws-info": ws_info,
-    "ws-token": {}
-  }
-
-  let ws_str=JSON.stringify(ws_req)
-  websocket.send(ws_str)
 
 }
 
-function ws_renderSection(ren_obj, ws_msg){
-
-let path = ws_msg.src.file.split("/")
-let file =path[path.length-1]
-file=file.split(".")[0]
-let ext=file.split(".")[1]
-path=path[0]
-
-
-
-ren_obj[path]="" //Crear función para validar si es necesario o permitido borrar o modificar lo existente
-  for(let i=0;i<=ws_obj.load.tally;i++){
-    if(ren_obj[i]===undefined){
-      alert("File is not completely loaded")
-      break
-    }else{
-      ren_obj[ws_obj.src.object]+=ren_obj[i]
-      delete ren_obj[i]
-    }
-  }
- 
-  let html_el=document.getElementById(`${ws_obj.src.file}-${ws_obj.src.object}`)
-  console.log(ws_obj.src.object)
-  html_el.innerHTML=ren_obj[ws_obj.src.object]
-  console.log(doc_render)
-
-
-  //RENDERIZAR EN FUNCIÓN DEL VALOR DE  FILE
-  //CAMBIAR VARIABLES FILE Y OBJETC POR PATH Y FILE
-  //INTEGRAR ESTA FUNCIÓN EN VEZ DE RENDER TOPIC
-  
-}
-/////////////////////////////////////////
-
-function ws_callRender(param,owner=""){ ////The element does not exist
+function ws_callRender(param,owner="ws-body"){ ////The element does not exist
   let i=0
 
   let arr_files=[]
@@ -108,16 +64,7 @@ function ws_callRender(param,owner=""){ ////The element does not exist
           alert("JS ADDED")
           break;
         case "html":
-          let pos_div
-          if(owner =="")
-            pos_div=document.getElementById("ws-body")
-          else
-            pos_div=document.getElementById(owner)
-          pos_div.innerHTML=""
-          let new_html=document.createElement("div")
-          new_html.id=id
-          pos_div.appendChild(new_html)
-          alert("HTML ADDED")
+          
           break;
         default:
       }
@@ -133,7 +80,7 @@ function ws_callRender(param,owner=""){ ////The element does not exist
   }
 
   let kind
-  if(owner=="")
+  if(owner=="ws-body")
     kind="ws-topic"
   else
     kind="ws-section"
@@ -176,22 +123,23 @@ function ws_joinFile(ws_obj){//module file object
         delete doc_render[module][path][file][i]
       }
     }
+    doc_render[module][path][file].owner=ws_obj.src.owner
+    
     let id=`ws-${file}-${ext}`
-    switch(module){
-      case "ws-section":
-        if(ext=="json"){
-          alert("Execute code for JSON param")
-          return
-        }
-        doc_render[module][path][file].owner=ws_obj.src.owner
-        break
-      case "ws-topic":
-      break
-      default:
+    if(ext=="html"){
+      let new_el=document.createElement("div")
+      new_el.id=id
+      console.log("ID OWNER: " + ws_obj.src.owner)
+      let html_ow=document.getElementById(ws_obj.src.owner)
+      html_ow.innerHTML=""
+      html_ow.appendChild(new_el)
     }
 
+
     let html_el=document.getElementById(id)
+    console.log(html_el)
     console.log(id)
+    console.log(ws_obj.src.owner)
     html_el.innerHTML=doc_render[module][path][file][ext]
     console.log(doc_render)
   }
@@ -297,11 +245,30 @@ function onOpen(event) {
     blinkLED(ws_led);
   }
   console.log("Conectado")
+  
+  /**
   let ws_req={
-    "path":"login",
-    "files":["login.html", "login.js"],
+    "path":"cebox",
+    "files":["cebox.html"]
   }
   ws_callRender(ws_req)
+
+  alert("WS SENDED!");
+
+  let sc_req={
+    "path":"login",
+    "files":["login.html","login.js"]
+  }
+  ws_callRender(sc_req,"ws-cb-form")   
+   */
+
+  let ws_req={
+    "path":"board",
+    "files":["board.html","panel.js"]
+  }
+  ws_callRender(ws_req)
+
+
 }
 
 function onError(event) {

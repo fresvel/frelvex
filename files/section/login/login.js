@@ -6,6 +6,6 @@ function login_Btn(){
         "files":["ota.html", "ota.js"],
       }
 
-    ws_callRender(ws_req,"ws-form")
+    ws_callRender(ws_req,"ws-cb-form")
   
 }
