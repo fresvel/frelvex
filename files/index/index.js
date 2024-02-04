@@ -85,13 +85,14 @@ ren_obj[path]="" //Crear función para validar si es necesario o permitido borra
 }
 /////////////////////////////////////////
 
-function ws_callTopic(topic){ ////The element does not exist
+function ws_callRender(param,owner=""){ ////The element does not exist
   let i=0
-  let ws_topic=[]
-  topic.files.forEach(item => {
-    ws_topic[i]=`${topic.path}/${item}`
+
+  let arr_files=[]
+  param.files.forEach(item => {
+    arr_files[i]=`${param.path}/${item}`
     let ext=item.split('.')[1]
-    let id=`tp-${item.split('.')[0]}-${ext}`
+    let id=`ws-${item.split('.')[0]}-${ext}`
     if(document.getElementById(id)===null){
       switch(ext){
         case "css":
@@ -107,11 +108,15 @@ function ws_callTopic(topic){ ////The element does not exist
           alert("JS ADDED")
           break;
         case "html":
-          let body=document.getElementById("ws-body")
-          body.innerHTML=""
+          let pos_div
+          if(owner =="")
+            pos_div=document.getElementById("ws-body")
+          else
+            pos_div=document.getElementById(owner)
+          pos_div.innerHTML=""
           let new_html=document.createElement("div")
           new_html.id=id
-          body.appendChild(new_html)
+          pos_div.appendChild(new_html)
           alert("HTML ADDED")
           break;
         default:
@@ -121,13 +126,24 @@ function ws_callTopic(topic){ ////The element does not exist
     }
     i++
   })
-  
-  let ws_req={
-    "ws-method":"ws-topic", 
-    "ws-info":ws_topic,
-    "ws-token":{}
+
+  let ws_info={
+    "array": arr_files,
+    "owner": owner
   }
-  
+
+  let kind
+  if(owner=="")
+    kind="ws-topic"
+  else
+    kind="ws-section"
+
+  let ws_req={
+    "ws-method": kind,
+    "ws-info": ws_info,
+    "ws-token": {}
+  }
+
   let ws_str=JSON.stringify(ws_req)
   websocket.send(ws_str)
 }
@@ -160,25 +176,22 @@ function ws_joinFile(ws_obj){//module file object
         delete doc_render[module][path][file][i]
       }
     }
-    let id;
+    let id=`ws-${file}-${ext}`
     switch(module){
       case "ws-section":
         if(ext=="json"){
           alert("Execute code for JSON param")
           return
         }
-        id=`sc-${file}-${ext}`
         doc_render[module][path][file].owner=ws_obj.src.owner
         break
       case "ws-topic":
-        id=`tp-${file}-${ext}`
       break
       default:
-        id=`ws-${file}-${ext}`
     }
 
     let html_el=document.getElementById(id)
-    console.log(ws_obj.src.object)
+    console.log(id)
     html_el.innerHTML=doc_render[module][path][file][ext]
     console.log(doc_render)
   }
@@ -284,11 +297,11 @@ function onOpen(event) {
     blinkLED(ws_led);
   }
   console.log("Conectado")
-  let topic={
+  let ws_req={
     "path":"login",
-    "files":["login.html", "login.js"]
+    "files":["login.html", "login.js"],
   }
-  ws_callTopic(topic)
+  ws_callRender(ws_req)
 }
 
 function onError(event) {

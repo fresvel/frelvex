@@ -181,18 +181,21 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
     printf("ws-method %s\n", ws_type->valuestring);
     
     cJSON *ws_info=cJSON_GetObjectItem(ws_obj_req,"ws-info");
-
+    printf("1\n");
     ws_send_file_t ws_file;
     ws_file.req=req;
     ws_file.module=ws_strtype;
     ws_file.owner="";
 
-    char* base_path=cJSON_GetObjectItem(json_files_path,ws_strtype)->valuestring;
+    printf("2");
+    char* base_path=cJSON_GetObjectItem(json_files_path,ws_strtype)->valuestring;//Do not assume that this is a string
+    printf("3");
 /*ARRAY REQUEST BASE*/
     if (cJSON_IsArray(ws_info))
     {
+        printf("4");
         ws_arr_process(&ws_info,&ws_file,base_path);
-
+        printf("1");
 /*OBJETC REQUEST BASE*/
     }else if (cJSON_IsObject(ws_info))
     {
@@ -204,7 +207,7 @@ void ws_app_text(char *ws_app_str, httpd_req_t *req) {
         {
             ESP_LOGI(TAG, "Setting method for: %s\n",ws_type->valuestring);
             ws_file.method="header";
-        }else if (strcmp("ws-section",ws_type->valuestring) == 0){
+        }else if (strcmp("ws-section",ws_type->valuestring) == 0||strcmp("ws-topic",ws_type->valuestring) == 0){
             ESP_LOGI(TAG, "Setting method for: %s\n",ws_type->valuestring);
             ws_file.method="render";
             cJSON *owner=cJSON_GetObjectItem(ws_info,"owner");
