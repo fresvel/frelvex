@@ -28,7 +28,7 @@ static void IRAM_ATTR gpio_isr_handler(void*arg){
 static void gpio_task(){
     ESP_LOGI(TAG,"Tarea GPIO inicializada");
 
-    u_int32_t pin = 0;
+    uint32_t pin = 0;
     while (pdTRUE)
     {
         if (xQueueReceive(gpio_queue,&pin,portMAX_DELAY))
